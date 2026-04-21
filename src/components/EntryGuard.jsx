@@ -22,9 +22,9 @@ const EntryGuard = ({ onAgreed }) => {
       <div className="entry-guard-container warning-bg">
         <div className="card-box">
           <AlertCircle size={48} className="icon-warning" />
-          <h2>現在、アプリ内ブラウザで開かれています</h2>
+          <h2>アプリ内ブラウザを検知しました</h2>
           <p>
-            注意: アプリ内ブラウザ、シークレットモード（プライベートブラウズ）では正しく利用できません。
+            注意: <strong>LINE、Googleアプリ、Yahoo!アプリ、Instagram</strong> などのアプリ内ブラウザや、シークレットモード（プライベートブラウズ）では正常に動作しません。
           </p>
           <div className="instruction-box">
             <p><strong>右上の「⋮」または右下のメニュー</strong>から</p>
