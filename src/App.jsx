@@ -43,39 +43,28 @@ function App() {
     return <EntryGuard onAgreed={() => setAgreed(true)} />;
   }
 
-  // If all stamps collected, we show StampCard + Reward options
-  // The user wanted:
-  // 5. 特典引き換え（コンプリート時のみ）: スライダー操作 ＋ 動的時計表示。
-  // But wait! If `isExchanged` is true, ALWAYS show exchanged screen (with clock).
-  // Or show StampCard AND RewardScreen. 
-  // We'll show StampCard and append RewardScreen below it if complete.
+  const isComplete = stamps.length >= TOTAL_STAMPS;
 
   return (
     <div className="app-container">
-      {!isExchanged && isScanning ? (
+      {isScanning ? (
         <QRScanner 
           onScanSuccess={handleScanSuccess} 
           onCancel={() => setIsScanning(false)} 
         />
       ) : (
         <>
-          {isExchanged ? (
-             <RewardScreen isExchanged={isExchanged} onExchange={handleExchange} />
-          ) : (
-            <>
-              <StampCard 
-                stamps={stamps} 
-                totalStamps={TOTAL_STAMPS} 
-                isExchanged={isExchanged}
-                onOpenCamera={() => setIsScanning(true)} 
-              />
-              
-              {stamps.length >= TOTAL_STAMPS && (
-                <div className="reward-section-wrapper">
-                  <RewardScreen isExchanged={isExchanged} onExchange={handleExchange} />
-                </div>
-              )}
-            </>
+          <StampCard 
+            stamps={stamps} 
+            totalStamps={TOTAL_STAMPS} 
+            isExchanged={isExchanged}
+            onOpenCamera={() => setIsScanning(true)} 
+          />
+          
+          {isComplete && (
+            <div className="reward-section-wrapper">
+              <RewardScreen isExchanged={isExchanged} onExchange={handleExchange} />
+            </div>
           )}
         </>
       )}

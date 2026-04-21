@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { calculateDistance, STAMP_SPOTS, MAX_DISTANCE_METERS } from '../utils/geoUtils';
-import { MapPin, Target, XCircle } from 'lucide-react';
+import { MapPin, XCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
 const QRScanner = ({ onScanSuccess, onCancel }) => {
   const [status, setStatus] = useState("カメラを起動しています...");
   const [distanceInfo, setDistanceInfo] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const scannerRef = useRef(null);
 
   useEffect(() => {
@@ -15,44 +17,66 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
 
     const startScanner = async () => {
       try {
-        // StrictMode対策としてDOMの中身を一度リセット
         const el = document.getElementById("qr-reader");
         if (el) el.innerHTML = "";
 
         html5QrCode = new Html5Qrcode("qr-reader");
         scannerRef.current = html5QrCode;
 
+        // レスポンシブな枠の設定（より広く調整）
+        const qrboxFunction = (viewfinderWidth, viewfinderHeight) => {
+          const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+          const qrboxSize = Math.floor(minEdgeSize * 0.85); // 70%から85%に拡大
+          return {
+            width: Math.max(qrboxSize, 250),
+            height: Math.max(qrboxSize, 250)
+          };
+        };
+
         await html5QrCode.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 250, height: 250 } },
+          {
+            fps: 15,
+            qrbox: qrboxFunction
+          },
           (decodedText) => {
-            if (html5QrCode.isScanning) {
-              html5QrCode.stop()
-                .then(() => processCheckIn(decodedText))
-                .catch(e => console.error("Error stopping scanner", e));
+            if (mounted && !isCapturing && !isSuccess) {
+              setCapturing(decodedText);
             }
           },
-          () => {} // ignore constant parse errors
+          () => { }
         );
 
         if (!mounted) {
-          await html5QrCode.stop();
-          html5QrCode.clear();
+          if (html5QrCode.isScanning) {
+            await html5QrCode.stop();
+          }
         } else {
           setStatus("枠内にQRコードを写してください");
         }
       } catch (err) {
         if (mounted) {
           console.error(err);
-          setStatus("カメラへのアクセスが必要です。許可してください。");
+          setStatus("カメラの起動に失敗しました。");
         }
       }
     };
 
-    // Strict Modeの即時マウント・アンマウントによる重複起動を防ぐため遅延起動
+    const setCapturing = (text) => {
+      setIsCapturing(true);
+      setStatus("検証中..."); // ユーザー要望：完了するまでは検証中の文字
+      if (scannerRef.current && scannerRef.current.isScanning) {
+        scannerRef.current.stop()
+          .then(() => processCheckIn(text.trim()))
+          .catch(() => processCheckIn(text.trim()));
+      } else {
+        processCheckIn(text.trim());
+      }
+    };
+
     const timer = setTimeout(() => {
       startScanner();
-    }, 150);
+    }, 300);
 
     return () => {
       mounted = false;
@@ -66,11 +90,11 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
   const processCheckIn = (qrId) => {
     setIsProcessing(true);
     setDistanceInfo(null);
-    setStatus("現在地を確認しています...");
+    // statusは既に "検証中..." になっている
 
     if (!navigator.geolocation) {
-      alert("お使いの端末はGPSに対応していません。");
-      setIsProcessing(false);
+      alert("GPSに対応していません。");
+      resetScannerStates();
       return;
     }
 
@@ -78,69 +102,81 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
       (pos) => {
         const { latitude, longitude } = pos.coords;
         const target = STAMP_SPOTS[qrId];
-        
+
         if (!target) {
-          setStatus("無効なQRコードです。");
+          setStatus(`無効なチェックポイントです`);
           setIsProcessing(false);
+          setIsCapturing(false);
           return;
         }
 
         const distance = calculateDistance(latitude, longitude, target.lat, target.lon);
-        
         if (distance <= MAX_DISTANCE_METERS) {
-          setStatus(`${target.name}にチェックイン成功！`);
-          setTimeout(() => {
-            onScanSuccess(qrId);
-          }, 1500);
+          setIsSuccess(true);
+          setStatus("チェックイン完了！");
+          setTimeout(() => onScanSuccess(qrId), 1500);
         } else {
           setDistanceInfo(Math.round(distance));
-          setStatus("目的地から離れています");
+          setStatus("掲示位置から離れています");
         }
         setIsProcessing(false);
       },
       (err) => {
-        let errMsg = "位置情報の取得に失敗しました。";
-        if (err.code === 1) errMsg = "位置情報の利用が拒否されました。設定を確認してください。";
-        setStatus(errMsg);
-        setIsProcessing(false);
+        setStatus("位置情報の取得に失敗しました。");
+        resetScannerStates();
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
+  const resetScannerStates = () => {
+    setIsProcessing(false);
+    setIsCapturing(false);
+  };
+
   return (
     <div className="scanner-overlay">
       <div className="scanner-container">
-        <h2 className={distanceInfo ? "status-warning" : ""}>{status}</h2>
-        
-        {!isProcessing && !distanceInfo && status !== "無効なQRコードです。" && status !== "カメラへのアクセスが必要です。許可してください。" && status !== "位置情報の取得に失敗しました。" && status !== "位置情報の利用が拒否されました。設定を確認してください。" && (
+        <h2 className={distanceInfo ? "status-warning" : (isSuccess ? "status-success" : "")}>
+          {status}
+        </h2>
+
+        {/* スキャン中のみ表示（枠あり） */}
+        {!isCapturing && !isProcessing && !isSuccess && !distanceInfo && (
           <div id="qr-reader" className="qr-reader-box-custom"></div>
         )}
 
-        {isProcessing && (
-          <div className="processing-indicator">
-            <Target className="spin-icon" size={48} />
+        {/* 検証中（読み取り成功〜GPS判定完了まで） */}
+        {(isCapturing || isProcessing) && !isSuccess && !distanceInfo && (
+          <div className="validation-indicator">
+            <Loader2 className="spin-icon-slow" size={64} />
+            <p className="validation-text">位置情報を検証しています...</p>
+          </div>
+        )}
+
+        {/* 完了後：チェックマークを表示 */}
+        {isSuccess && (
+          <div className="success-indicator">
+            <CheckCircle2 className="icon-success-large" size={80} />
           </div>
         )}
 
         {distanceInfo && (
           <div className="distance-warning">
             <MapPin size={32} />
-            <p><strong>目的地まであと約 {distanceInfo}m です</strong></p>
+            <p><strong>あと約 {distanceInfo}m です</strong></p>
             <p className="sub-text">もう少し近づいてから、もう一度お試しください。</p>
-            <button className="btn-secondary" onClick={onCancel}>戻る</button>
+            <button className="btn-secondary" onClick={onCancel}>やり直す</button>
           </div>
         )}
-        
-        <button className="btn-cancel" onClick={() => {
-          if (scannerRef.current && scannerRef.current.isScanning) {
-            scannerRef.current.stop().then(onCancel).catch(onCancel);
-          } else {
-            onCancel();
-          }
-        }}>
-          <XCircle size={20} /> とじる
-        </button>
+
+        <div className="scanner-footer">
+          {!isSuccess && !isProcessing && !isCapturing && (
+            <button className="btn-cancel" onClick={onCancel}>
+              <XCircle size={20} /> とじる
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

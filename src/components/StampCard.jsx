@@ -8,7 +8,7 @@ const StampCard = ({ stamps, totalStamps, isExchanged, onOpenCamera }) => {
   return (
     <div className="stamp-card-container">
       <div className="header">
-        <h1 className="event-title">なずな祭<br/>街歩きスタンプラリー</h1>
+        <h1 className="event-title">なずな祭<br />街歩きスタンプラリー</h1>
         <div className="progress-badge">
           <span>{stamps.length}</span> / {totalStamps}
         </div>
@@ -24,7 +24,7 @@ const StampCard = ({ stamps, totalStamps, isExchanged, onOpenCamera }) => {
                   <div className="slot-number">{slot}</div>
                   {isStamped && (
                     <div className="stamp-mark">
-                       <Check size={32} className="check-icon" />
+                      <Check size={32} className="check-icon" />
                     </div>
                   )}
                 </div>
@@ -36,7 +36,7 @@ const StampCard = ({ stamps, totalStamps, isExchanged, onOpenCamera }) => {
 
       {isComplete ? (
         <div className="complete-msg">
-          🎉 コンプリート！ ✨
+          コンプリート！
         </div>
       ) : (
         <p className="instruction-text">
@@ -44,7 +44,7 @@ const StampCard = ({ stamps, totalStamps, isExchanged, onOpenCamera }) => {
         </p>
       )}
 
-      {!isExchanged && (
+      {!isExchanged && !isComplete && (
         <div className="camera-button-wrapper">
           <button className="scan-btn-large" onClick={onOpenCamera}>
             <div className="scan-btn-icon">
