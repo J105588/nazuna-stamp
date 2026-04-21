@@ -123,8 +123,14 @@ body {
   align-items: flex-start;
   margin-bottom: 12px;
   font-size: 0.95rem;
-  line-height: 1.5;
+  line-height: 1.6;
   color: var(--text-dark);
+}
+
+.caution-list li strong {
+  color: var(--primary-color);
+  font-weight: 800;
+  margin: 0 2px;
 }
 
 .caution-list li:last-child {
@@ -327,7 +333,7 @@ body {
   border-radius: 30px;
   box-shadow: 0 10px 40px rgba(155,45,48,0.08); /* Enji tinted shadow */
   border: 2px solid white;
-  margin-bottom: 30px;
+  margin-bottom: 15px; /* 30pxから縮小：下のコンポーネントとの距離を詰める */
   position: relative;
   overflow: hidden;
 }
@@ -418,10 +424,11 @@ body {
 
 .complete-msg {
   text-align: center;
-  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  font-size: clamp(1.4rem, 5vw, 2rem);
   font-weight: 900;
   color: var(--secondary-color);
-  margin-top: 10px;
+  margin-top: 5px;
+  margin-bottom: 10px;
   animation: pulse 2s infinite;
   text-shadow: 0 4px 10px rgba(212,180,108,0.2);
 }
@@ -646,7 +653,7 @@ body {
 
 /* REWARD SECTION */
 .reward-section-wrapper {
-  margin-top: 30px;
+  margin-top: 10px; /* 30pxから縮小：上のカードとの隙間を埋める */
   padding: 0 16px 60px;
 }
 
