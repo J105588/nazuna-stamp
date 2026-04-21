@@ -27,8 +27,8 @@ const EntryGuard = ({ onAgreed }) => {
             注意: <strong>LINE、Googleアプリ、Yahoo!アプリ、Instagram</strong> などのアプリ内ブラウザや、シークレットモード（プライベートブラウズ）では正常に動作しません。
           </p>
           <div className="instruction-box">
-            <p><strong>iPhone</strong>をお使いの方は <strong>Safari</strong></p>
-            <p><strong>Android</strong>をお使いの方は <strong>Chrome</strong></p>
+            <p><strong>iPhone</strong>をお使いの方は <strong>Safari / Brave</strong></p>
+            <p><strong>Android</strong>をお使いの方は <strong>Chrome / Brave</strong></p>
             <p style={{ marginTop: '10px' }}>で開き直してください。</p>
             <p className="highlight" style={{ marginTop: '15px', fontSize: '0.9rem' }}>
               ※右上の「⋮」または右下のメニューから「ブラウザで開く」を選択するか、URLをコピーしてブラウザに貼り付けてください。
@@ -102,7 +102,7 @@ const EntryGuard = ({ onAgreed }) => {
           <ul className="caution-list">
             <li>
               <CheckCircle size={18} className="list-icon" />
-              必ず <strong>Safari</strong> または <strong>Chrome</strong> で開いてください。
+              必ず <strong>Safari</strong>、<strong>Chrome</strong>、<strong>Brave</strong> で開いてください。
             </li>
             <li>
               <CheckCircle size={18} className="list-icon" />

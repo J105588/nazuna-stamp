@@ -33,10 +33,11 @@ export const isInAppBrowser = () => {
     const isChromeIOS = ua.includes('crios');
     const isFirefoxIOS = ua.includes('fxios');
     const isEdgeIOS = ua.includes('edgios');
+    const isBraveIOS = ua.includes('brave/');
 
     // 「AppleWebKitを含み、かつ Version/ が無い」ものは、
-    // ChromeやFirefoxなどの正規ブラウザを除き、アプリ内WebViewである可能性が非常に高い
-    if (hasAppleWebKit && !hasVersion && !isChromeIOS && !isFirefoxIOS && !isEdgeIOS) {
+    // Chrome, Firefox, Braveなどの正規ブラウザを除き、アプリ内WebViewである可能性が非常に高い
+    if (hasAppleWebKit && !hasVersion && !isChromeIOS && !isFirefoxIOS && !isEdgeIOS && !isBraveIOS) {
       return true;
     }
   }
