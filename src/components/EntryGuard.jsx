@@ -96,6 +96,7 @@ const EntryGuard = ({ onAgreed }) => {
 
         <div className="card-box">
           <div className="entry-logo">
+            <img src="/app-icon.jpg" alt="なずな祭ロゴ" className="event-logo-img" />
             <h1 className="event-title">なずな祭<br/>街歩きスタンプラリー</h1>
           </div>
           <h2>はじめる前の注意点</h2>

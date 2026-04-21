@@ -96,6 +96,20 @@ body {
 
 .entry-logo {
   margin-bottom: 20px; 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.event-logo-img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-bottom: 15px;
+  border: 4px solid white;
+  box-shadow: 0 8px 25px rgba(155, 45, 48, 0.15);
+  background: white;
 }
 
 .event-title {
@@ -304,7 +318,21 @@ body {
 
 .header {
   text-align: center;
-  margin: 20px 0 30px;
+  margin: 10px 0 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.event-logo-img-small {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 50%;
+  margin-bottom: 10px;
+  border: 3px solid white;
+  box-shadow: 0 4px 15px rgba(155, 45, 48, 0.1);
+  background: white;
 }
 
 .progress-badge {

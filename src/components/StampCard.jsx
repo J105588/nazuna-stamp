@@ -32,6 +32,7 @@ const StampCard = ({ stamps, totalStamps, isExchanged, onOpenCamera, scannerClos
       setTapCount(0);
     }}>
       <div className="header">
+        <img src="/app-icon.jpg" alt="なずな祭ロゴ" className="event-logo-img-small" />
         <h1 className="event-title">なずな祭<br />街歩きスタンプラリー</h1>
         <div className="progress-badge">
           <span>{stamps.length}</span> / {totalStamps}
