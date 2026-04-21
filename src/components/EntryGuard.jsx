@@ -102,15 +102,15 @@ const EntryGuard = ({ onAgreed }) => {
           <ul className="caution-list">
             <li>
               <CheckCircle size={18} className="list-icon" />
-              必ず <strong>Safari</strong>、<strong>Chrome</strong>、<strong>Brave</strong> で開いてください。
+              <span>必ず <strong>Safari / Chrome / Brave</strong> を使用してください。</span>
             </li>
             <li>
               <CheckCircle size={18} className="list-icon" />
-              ブラウザの <strong>位置情報(GPS)</strong> の使用を「許可」してください。
+              <span>ブラウザの <strong>位置情報(GPS)</strong> の使用を「許可」してください。</span>
             </li>
             <li>
               <CheckCircle size={18} className="list-icon" />
-              <strong>プライベートモード</strong>は使用しないでください（データが消えます）。
+              <span><strong>プライベートモード</strong>は使用しないでください（データが消えます）。</span>
             </li>
           </ul>
           

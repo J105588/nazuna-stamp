@@ -130,7 +130,6 @@ body {
 .caution-list li strong {
   color: var(--primary-color);
   font-weight: 800;
-  margin: 0 2px;
 }
 
 .caution-list li:last-child {
