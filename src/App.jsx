@@ -4,14 +4,19 @@ import StampCard from './components/StampCard';
 import QRScanner from './components/QRScanner';
 import RewardScreen from './components/RewardScreen';
 import { STAMP_SPOTS } from './utils/geoUtils';
+import { X } from 'lucide-react';
 
 const TOTAL_STAMPS = Object.keys(STAMP_SPOTS).length;
+const DEBUG_PASSCODE = "0415";
 
 function App() {
   const [agreed, setAgreed] = useState(false);
   const [stamps, setStamps] = useState([]);
   const [isScanning, setIsScanning] = useState(false);
   const [isExchanged, setIsExchanged] = useState(false);
+  const [scannerClosedAt, setScannerClosedAt] = useState(0);
+  const [showPasscode, setShowPasscode] = useState(false);
+  const [passcodeInput, setPasscodeInput] = useState("");
 
   useEffect(() => {
     // Load state from localStorage on mount
@@ -25,6 +30,7 @@ function App() {
 
   const handleScanSuccess = (qrId) => {
     setIsScanning(false);
+    setScannerClosedAt(Date.now());
     if (!stamps.includes(qrId)) {
       const newStamps = [...stamps, qrId];
       setStamps(newStamps);
@@ -34,9 +40,28 @@ function App() {
     }
   };
 
+  const handleCancelScan = () => {
+    setIsScanning(false);
+    setScannerClosedAt(Date.now());
+  };
+
   const handleExchange = () => {
     localStorage.setItem('is_exchanged', 'true');
     setIsExchanged(true);
+  };
+
+  const handlePasscodeSubmit = (e) => {
+    e.preventDefault();
+    if (passcodeInput === DEBUG_PASSCODE) {
+      const allSpotIds = Object.keys(STAMP_SPOTS);
+      setStamps(allSpotIds);
+      localStorage.setItem('collected_stamps', JSON.stringify(allSpotIds));
+      setShowPasscode(false);
+      setPasscodeInput("");
+    } else {
+      alert("パスコードが違います");
+      setPasscodeInput("");
+    }
   };
 
   if (!agreed) {
@@ -46,11 +71,14 @@ function App() {
   const isComplete = stamps.length >= TOTAL_STAMPS;
 
   return (
-    <div className="app-container">
+    <div className="app-container" onClick={() => {
+      // Global click listener to potentially reset backdoor if needed, 
+      // but we handle local reset in StampCard for specific logic
+    }}>
       {isScanning ? (
         <QRScanner 
           onScanSuccess={handleScanSuccess} 
-          onCancel={() => setIsScanning(false)} 
+          onCancel={handleCancelScan} 
         />
       ) : (
         <>
@@ -59,6 +87,8 @@ function App() {
             totalStamps={TOTAL_STAMPS} 
             isExchanged={isExchanged}
             onOpenCamera={() => setIsScanning(true)} 
+            scannerClosedAt={scannerClosedAt}
+            onBackdoorAction={() => setShowPasscode(true)}
           />
           
           {isComplete && (
@@ -67,6 +97,30 @@ function App() {
             </div>
           )}
         </>
+      )}
+
+      {showPasscode && (
+        <div className="debug-passcode-overlay" onClick={() => setShowPasscode(false)}>
+          <div className="passcode-card" onClick={e => e.stopPropagation()}>
+            <button className="passcode-close" onClick={() => setShowPasscode(false)}>
+              <X size={20} />
+            </button>
+            <h3>管理者認証</h3>
+            <p>パスコードを入力してください</p>
+            <form onSubmit={handlePasscodeSubmit}>
+              <input 
+                type="password" 
+                inputMode="numeric"
+                maxLength={4}
+                value={passcodeInput}
+                onChange={e => setPasscodeInput(e.target.value)}
+                autoFocus
+                placeholder="****"
+              />
+              <button type="submit" className="btn-primary">OK</button>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
