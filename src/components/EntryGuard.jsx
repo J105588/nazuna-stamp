@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { isInAppBrowser } from '../utils/browserDetect';
+import { storage } from '../utils/storage';
 import { AlertCircle, CheckCircle, FileText, X } from 'lucide-react';
 
 const EntryGuard = ({ onAgreed }) => {
@@ -11,11 +12,36 @@ const EntryGuard = ({ onAgreed }) => {
   useEffect(() => {
     if (isInAppBrowser()) {
       setInAppMode(true);
-    } else if (localStorage.getItem('terms_agreed') === 'true') {
+    } else if (storage.load('terms_agreed') === true) {
       setAgreed(true);
       onAgreed();
     }
   }, [onAgreed]);
+
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    // 使用者が最下部付近（5pxのバッファ）までスクロールしたか判定
+    if (scrollHeight - scrollTop <= clientHeight + 5) {
+      setHasScrolledToBottom(true);
+    }
+  };
+
+  useEffect(() => {
+    // モーダルが開かれたときに、コンテンツが少なくてスクロール不要な場合の対応
+    if (showTerms) {
+      const timer = setTimeout(() => {
+        const element = document.querySelector('.terms-scroll-area');
+        if (element && element.scrollHeight <= element.clientHeight) {
+          setHasScrolledToBottom(true);
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      setHasScrolledToBottom(false);
+    }
+  }, [showTerms]);
 
   if (inAppMode) {
     return (
@@ -49,7 +75,7 @@ const EntryGuard = ({ onAgreed }) => {
                 <X size={24} />
               </button>
               <h3>利用規約</h3>
-              <div className="terms-scroll-area">
+              <div className="terms-scroll-area" onScroll={handleScroll}>
                 <p>本スタンプラリー（以下「本イベント」）に参加される前に、以下の規約を必ずご確認ください。本アプリで「同意して開始」を選択した時点で、本規約に同意したものとみなします。</p>
                 
                 <h4>1. 推奨環境について</h4>
@@ -71,6 +97,7 @@ const EntryGuard = ({ onAgreed }) => {
                 
                 <h4>4. 特典の引き換え</h4>
                 <p>スタンプをすべてコンプリートした際に出現する「引き換え画面」は、必ずスタッフの指示に従って操作してください。<br/><br/>
+                スタッフの確認前に誤って「使用済み」にした場合、再発行はできません。<br/>
                 一度「使用済み」となった特典は再利用できません。<br/>
                 画面のスクリーンショットによる引き換えは無効です。</p>
                 
@@ -81,15 +108,21 @@ const EntryGuard = ({ onAgreed }) => {
                 
                 <p className="copyright">©2026 なずな祭実行委員会</p>
               </div>
-              <button 
-                className="btn-primary" 
-                onClick={() => {
-                  setTermsViewed(true);
-                  setShowTerms(false);
-                }}
-              >
-                確認して閉じる
-              </button>
+              <div className="modal-footer">
+                {!hasScrolledToBottom && (
+                  <p className="scroll-notice">最下部までスクロールしてください</p>
+                )}
+                <button 
+                  className={`btn-primary ${!hasScrolledToBottom ? 'disabled' : ''}`}
+                  disabled={!hasScrolledToBottom}
+                  onClick={() => {
+                    setTermsViewed(true);
+                    setShowTerms(false);
+                  }}
+                >
+                  確認して閉じる
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -126,7 +159,7 @@ const EntryGuard = ({ onAgreed }) => {
             className={`btn-primary ${!termsViewed ? 'disabled' : ''}`}
             disabled={!termsViewed}
             onClick={() => {
-              localStorage.setItem('terms_agreed', 'true');
+              storage.save('terms_agreed', true);
               setAgreed(true);
               onAgreed();
             }}

@@ -261,6 +261,27 @@ body {
   padding-bottom: 15px;
 }
 
+.modal-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.scroll-notice {
+  font-size: 0.85rem;
+  color: var(--danger);
+  font-weight: bold;
+  text-align: center;
+  animation: bounceSoft 2s infinite;
+}
+
+@keyframes bounceSoft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
 .terms-scroll-area {
   overflow-y: auto;
   flex: 1;

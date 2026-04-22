@@ -4,10 +4,11 @@ import StampCard from './components/StampCard';
 import QRScanner from './components/QRScanner';
 import RewardScreen from './components/RewardScreen';
 import { STAMP_SPOTS } from './utils/geoUtils';
+import { storage } from './utils/storage';
 import { X } from 'lucide-react';
 
 const TOTAL_STAMPS = Object.keys(STAMP_SPOTS).length;
-const DEBUG_PASSCODE = "0415";
+const DEBUG_PASSCODE = import.meta.env.VITE_DEBUG_PASSCODE;
 
 function App() {
   const [agreed, setAgreed] = useState(false);
@@ -19,11 +20,11 @@ function App() {
   const [passcodeInput, setPasscodeInput] = useState("");
 
   useEffect(() => {
-    // Load state from localStorage on mount
-    const savedStamps = JSON.parse(localStorage.getItem('collected_stamps') || '[]');
+    // Load state from encrypted storage on mount
+    const savedStamps = storage.load('collected_stamps') || [];
     setStamps(savedStamps);
     
-    if (localStorage.getItem('is_exchanged') === 'true') {
+    if (storage.load('is_exchanged') === true) {
       setIsExchanged(true);
     }
   }, []);
@@ -34,7 +35,7 @@ function App() {
     if (!stamps.includes(qrId)) {
       const newStamps = [...stamps, qrId];
       setStamps(newStamps);
-      localStorage.setItem('collected_stamps', JSON.stringify(newStamps));
+      storage.save('collected_stamps', newStamps);
     } else {
       alert("このスポットは既にチェックイン済みです！");
     }
@@ -46,7 +47,7 @@ function App() {
   };
 
   const handleExchange = () => {
-    localStorage.setItem('is_exchanged', 'true');
+    storage.save('is_exchanged', true);
     setIsExchanged(true);
   };
 
@@ -55,7 +56,7 @@ function App() {
     if (passcodeInput === DEBUG_PASSCODE) {
       const allSpotIds = Object.keys(STAMP_SPOTS);
       setStamps(allSpotIds);
-      localStorage.setItem('collected_stamps', JSON.stringify(allSpotIds));
+      storage.save('collected_stamps', allSpotIds);
       setShowPasscode(false);
       setPasscodeInput("");
     } else {
