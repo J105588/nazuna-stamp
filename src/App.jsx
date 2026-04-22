@@ -3,9 +3,10 @@ import EntryGuard from './components/EntryGuard';
 import StampCard from './components/StampCard';
 import QRScanner from './components/QRScanner';
 import RewardScreen from './components/RewardScreen';
+import MapModal from './components/MapModal';
 import { STAMP_SPOTS } from './utils/geoUtils';
 import { storage } from './utils/storage';
-import { X } from 'lucide-react';
+import { X, Map as MapIcon } from 'lucide-react';
 
 const TOTAL_STAMPS = Object.keys(STAMP_SPOTS).length;
 const DEBUG_PASSCODE = import.meta.env.VITE_DEBUG_PASSCODE;
@@ -18,6 +19,7 @@ function App() {
   const [scannerClosedAt, setScannerClosedAt] = useState(0);
   const [showPasscode, setShowPasscode] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
+  const [isMapOpen, setIsMapOpen] = useState(false);
 
   useEffect(() => {
     // Load state from encrypted storage on mount
@@ -49,6 +51,10 @@ function App() {
   const handleExchange = () => {
     storage.save('is_exchanged', true);
     setIsExchanged(true);
+  };
+
+  const toggleMap = () => {
+    setIsMapOpen(!isMapOpen);
   };
 
   const handlePasscodeSubmit = (e) => {
@@ -97,8 +103,15 @@ function App() {
               <RewardScreen isExchanged={isExchanged} onExchange={handleExchange} />
             </div>
           )}
+
+          {/* Floating Map Button */}
+          <button className="fab-map" onClick={toggleMap} aria-label="地図を表示">
+            <MapIcon size={24} />
+          </button>
         </>
       )}
+
+      {isMapOpen && <MapModal onClose={() => setIsMapOpen(false)} />}
 
       {showPasscode && (
         <div className="debug-passcode-overlay" onClick={() => setShowPasscode(false)}>
