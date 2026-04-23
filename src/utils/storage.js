@@ -1,6 +1,10 @@
 import CryptoJS from 'crypto-js';
 
-const SECRET_KEY = import.meta.env.VITE_STORAGE_SECRET || 'nazuna-fallback-secret-key';
+const SECRET_KEY = import.meta.env.VITE_STORAGE_SECRET;
+
+if (!SECRET_KEY) {
+  console.warn('Warning: VITE_STORAGE_SECRET is not defined. Data encryption will be insecure.');
+}
 
 /**
  * Utility for encrypted localStorage access

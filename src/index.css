@@ -735,6 +735,13 @@ body {
   width: 100%;
 }
 
+.retry-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 5px;
+}
+
 /* REWARD SECTION */
 .reward-section-wrapper {
   margin-top: 5px;

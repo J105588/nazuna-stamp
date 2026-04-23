@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { storage } from '../utils/storage';
 
 export const RewardScreen = ({ isExchanged, onExchange }) => {
   const [sliderValue, setSliderValue] = useState(0);
@@ -9,8 +10,14 @@ export const RewardScreen = ({ isExchanged, onExchange }) => {
   useEffect(() => {
     // Dynamic clock running
     const timerId = setInterval(() => setCurrentTime(new Date()), 1000);
+    
+    // Persistence check: If exchanged but not yet dismissed, show overlay
+    if (isExchanged && !storage.load('reward_overlay_dismissed')) {
+      setShowSuccessOverlay(true);
+    }
+
     return () => clearInterval(timerId);
-  }, []);
+  }, [isExchanged]);
 
   const handleSliderChange = (e) => {
     if (isExchanged) return;
@@ -51,7 +58,10 @@ export const RewardScreen = ({ isExchanged, onExchange }) => {
             <p>※この画面をスタッフに提示してください</p>
           </div>
 
-          <button className="btn-close-overlay" onClick={() => setShowSuccessOverlay(false)}>
+          <button className="btn-close-overlay" onClick={() => {
+            storage.save('reward_overlay_dismissed', true);
+            setShowSuccessOverlay(false);
+          }}>
             閉じる
           </button>
         </div>

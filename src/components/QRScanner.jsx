@@ -82,7 +82,12 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
       mounted = false;
       clearTimeout(timer);
       if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop().then(() => html5QrCode.clear()).catch(e => console.error(e));
+        html5QrCode.stop()
+          .then(() => html5QrCode.clear())
+          .catch(e => {
+            console.error("Scanner stop error:", e);
+            html5QrCode.clear();
+          });
       }
     };
   }, []);
@@ -98,10 +103,13 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
       return;
     }
 
+    // Store the current QR ID for potential retries
+    const currentQrId = qrId;
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
-        const target = STAMP_SPOTS[qrId];
+        const target = STAMP_SPOTS[currentQrId];
 
         if (!target) {
           setStatus(`無効なチェックポイントです`);
@@ -114,14 +122,18 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
         if (distance <= MAX_DISTANCE_METERS) {
           setIsSuccess(true);
           setStatus("チェックイン完了！");
-          setTimeout(() => onScanSuccess(qrId), 1500);
+          setTimeout(() => onScanSuccess(currentQrId), 1500);
         } else {
-          setDistanceInfo(Math.round(distance));
+          setDistanceInfo({
+            distance: Math.round(distance),
+            qrId: currentQrId
+          });
           setStatus("掲示位置から離れています");
         }
         setIsProcessing(false);
       },
       (err) => {
+        console.error("Geolocation error:", err);
         setStatus("位置情報の取得に失敗しました。");
         resetScannerStates();
       },
@@ -164,9 +176,14 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
         {distanceInfo && (
           <div className="distance-warning">
             <MapPin size={32} />
-            <p><strong>あと約 {distanceInfo}m です</strong></p>
+            <p><strong>あと約 {distanceInfo.distance}m です</strong></p>
             <p className="sub-text">もう少し近づいてから、もう一度お試しください。</p>
-            <button className="btn-secondary" onClick={onCancel}>やり直す</button>
+            <div className="retry-actions">
+              <button className="btn-primary" onClick={() => processCheckIn(distanceInfo.qrId)}>
+                再判定する
+              </button>
+              <button className="btn-secondary" onClick={onCancel}>やめる</button>
+            </div>
           </div>
         )}
 

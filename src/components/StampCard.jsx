@@ -42,7 +42,7 @@ const StampCard = ({ stamps, totalStamps, isExchanged, onOpenCamera, scannerClos
       <div className="card-outer">
         <div className="card-grid">
           {slots.map((slot) => {
-            const isStamped = stamps.length >= slot;
+            const isStamped = stamps.includes(`spot-${slot}`);
             return (
               <div 
                 key={slot} 
