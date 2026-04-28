@@ -62,14 +62,20 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
       }
     };
 
-    const setCapturing = (text) => {
-      setIsCapturing(true);
-      setStatus("検証中..."); // ユーザー要望：完了するまでは検証中の文字
+    const setCapturing = async (text) => {
+      setStatus("検証中...");
+      
+      // Stop the camera BEFORE setting isCapturing=true to ensure the DOM element exists during stop()
       if (scannerRef.current && scannerRef.current.isScanning) {
-        scannerRef.current.stop()
-          .then(() => processCheckIn(text.trim()))
-          .catch(() => processCheckIn(text.trim()));
-      } else {
+        try {
+          await scannerRef.current.stop();
+        } catch (err) {
+          console.error("Camera stop error during capture:", err);
+        }
+      }
+      
+      if (mounted) {
+        setIsCapturing(true);
         processCheckIn(text.trim());
       }
     };
@@ -81,13 +87,21 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
     return () => {
       mounted = false;
       clearTimeout(timer);
-      if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop()
-          .then(() => html5QrCode.clear())
-          .catch(e => {
-            console.error("Scanner stop error:", e);
-            html5QrCode.clear();
-          });
+      
+      if (scannerRef.current) {
+        const scanner = scannerRef.current;
+        if (scanner.isScanning) {
+          scanner.stop()
+            .then(() => {
+              try { scanner.clear(); } catch(e) {}
+            })
+            .catch(e => {
+              console.error("Scanner cleanup stop error:", e);
+              try { scanner.clear(); } catch(err) {}
+            });
+        } else {
+          try { scanner.clear(); } catch(e) {}
+        }
       }
     };
   }, []);
