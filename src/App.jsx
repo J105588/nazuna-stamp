@@ -21,15 +21,53 @@ function App() {
   const [passcodeInput, setPasscodeInput] = useState("");
   const [isMapOpen, setIsMapOpen] = useState(false);
 
+  const [isDismissed, setIsDismissed] = useState(false);
+
   useEffect(() => {
-    // Load state from encrypted storage on mount
-    const savedStamps = storage.load('collected_stamps') || [];
-    setStamps(savedStamps);
+    // Load state from consolidated storage
+    const savedData = storage.load('stamp_rally_data');
     
-    if (storage.load('is_exchanged') === true) {
-      setIsExchanged(true);
+    if (savedData) {
+      setStamps(savedData.stamps || []);
+      setIsExchanged(savedData.isExchanged || false);
+      setIsDismissed(savedData.isDismissed || false);
+    } else {
+      // Migration logic for older versions (separate keys)
+      const oldStamps = storage.load('collected_stamps');
+      const oldExchanged = storage.load('is_exchanged');
+      const oldDismissed = storage.load('reward_overlay_dismissed');
+      
+      if (oldStamps !== null || oldExchanged !== null || oldDismissed !== null) {
+        const migratedStamps = oldStamps || [];
+        const migratedExchanged = oldExchanged === true;
+        const migratedDismissed = oldDismissed === true;
+        
+        setStamps(migratedStamps);
+        setIsExchanged(migratedExchanged);
+        setIsDismissed(migratedDismissed);
+        
+        // Save to the new consolidated format
+        storage.save('stamp_rally_data', {
+          stamps: migratedStamps,
+          isExchanged: migratedExchanged,
+          isDismissed: migratedDismissed
+        });
+        
+        // Clean up old keys
+        storage.remove('collected_stamps');
+        storage.remove('is_exchanged');
+        storage.remove('reward_overlay_dismissed');
+      }
     }
   }, []);
+
+  const saveState = (updatedStamps, updatedExchanged, updatedDismissed) => {
+    storage.save('stamp_rally_data', {
+      stamps: updatedStamps,
+      isExchanged: updatedExchanged,
+      isDismissed: updatedDismissed
+    });
+  };
 
   const handleScanSuccess = (qrId) => {
     setIsScanning(false);
@@ -37,7 +75,7 @@ function App() {
     if (!stamps.includes(qrId)) {
       const newStamps = [...stamps, qrId];
       setStamps(newStamps);
-      storage.save('collected_stamps', newStamps);
+      saveState(newStamps, isExchanged, isDismissed);
     } else {
       alert("このスポットは既にチェックイン済みです！");
     }
@@ -49,8 +87,8 @@ function App() {
   };
 
   const handleExchange = () => {
-    storage.save('is_exchanged', true);
     setIsExchanged(true);
+    saveState(stamps, true, isDismissed);
   };
 
   const toggleMap = () => {
@@ -62,7 +100,7 @@ function App() {
     if (passcodeInput === DEBUG_PASSCODE) {
       const allSpotIds = Object.keys(STAMP_SPOTS);
       setStamps(allSpotIds);
-      storage.save('collected_stamps', allSpotIds);
+      saveState(allSpotIds, isExchanged, isDismissed);
       setShowPasscode(false);
       setPasscodeInput("");
     } else {
@@ -100,7 +138,15 @@ function App() {
           
           {isComplete && (
             <div className="reward-section-wrapper">
-              <RewardScreen isExchanged={isExchanged} onExchange={handleExchange} />
+              <RewardScreen 
+                isExchanged={isExchanged} 
+                isDismissed={isDismissed}
+                onExchange={handleExchange} 
+                onDismiss={() => {
+                  setIsDismissed(true);
+                  saveState(stamps, isExchanged, true);
+                }}
+              />
             </div>
           )}
 

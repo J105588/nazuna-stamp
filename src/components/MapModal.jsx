@@ -44,43 +44,67 @@ function MapModal({ onClose }) {
   const [currentPos, setCurrentPos] = useState(null);
   const [mapCenter, setMapCenter] = useState([35.668872, 139.854878]); // Default to some spot
   const [zoom, setZoom] = useState(16);
+  const [isLocating, setIsLocating] = useState(true);
+  const [locatingError, setLocatingError] = useState(false);
 
   useEffect(() => {
-    // Get initial current position
-    if (navigator.geolocation) {
+    let watchId;
+
+    const requestLocation = () => {
+      if (!navigator.geolocation) {
+        setIsLocating(false);
+        return;
+      }
+
+      setIsLocating(true);
+      setLocatingError(false);
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const pos = [position.coords.latitude, position.coords.longitude];
           setCurrentPos(pos);
           setMapCenter(pos);
+          setZoom(17);
+          setIsLocating(false);
         },
         (error) => {
           console.error("Error getting geolocation:", error);
+          setIsLocating(false);
+          setLocatingError(true);
+          
           // Fallback to first spot if geolocation fails
           const firstSpot = Object.values(STAMP_SPOTS)[0];
           if (firstSpot) {
             setMapCenter([firstSpot.lat, firstSpot.lon]);
           }
-        }
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
       );
 
       // Watch position for updates
-      const watchId = navigator.geolocation.watchPosition(
+      watchId = navigator.geolocation.watchPosition(
         (position) => {
           setCurrentPos([position.coords.latitude, position.coords.longitude]);
         },
         (error) => console.error("Error watching geolocation:", error),
         { enableHighAccuracy: true }
       );
+    };
 
-      return () => navigator.geolocation.clearWatch(watchId);
-    }
+    requestLocation();
+
+    return () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId);
+    };
   }, []);
 
   const handleRecenter = () => {
     if (currentPos) {
       setMapCenter(currentPos);
       setZoom(17);
+    } else {
+      // If we don't have a position, try requesting again
+      window.location.reload(); // Simple way to re-trigger the entire flow if needed, but let's be more elegant
     }
   };
 
@@ -134,6 +158,24 @@ function MapModal({ onClose }) {
               </Marker>
             )}
           </MapContainer>
+
+          {/* Locating Overlay */}
+          {isLocating && (
+            <div className="map-loading-overlay">
+              <div className="loading-spinner-wrapper">
+                <LocateFixed className="spin-icon" size={32} />
+                <p>現在地を取得中...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {!isLocating && locatingError && !currentPos && (
+            <div className="map-error-notice">
+              <Navigation size={16} />
+              <span>現在地を取得できませんでした</span>
+            </div>
+          )}
 
           <button className="recenter-btn" onClick={handleRecenter} title="現在地へ移動">
             <LocateFixed size={20} />
