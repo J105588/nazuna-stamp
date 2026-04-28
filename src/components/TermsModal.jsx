@@ -31,9 +31,9 @@ const TermsModal = ({ onClose, forceScroll = true }) => {
   }, []);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={() => onClose(false)}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <button className="modal-close" onClick={onClose}>
+        <button className="modal-close" onClick={() => onClose(false)}>
           <X size={24} />
         </button>
         <h3>利用規約</h3>
@@ -81,7 +81,7 @@ const TermsModal = ({ onClose, forceScroll = true }) => {
           <button
             className={`btn-primary ${!hasScrolledToBottom ? 'disabled' : ''}`}
             disabled={!hasScrolledToBottom}
-            onClick={onClose}
+            onClick={() => onClose(true)}
           >
             確認して閉じる
           </button>

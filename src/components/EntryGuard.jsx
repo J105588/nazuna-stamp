@@ -47,9 +47,11 @@ const EntryGuard = ({ onAgreed }) => {
       <div className="entry-guard-container">
         {showTerms && (
           <TermsModal 
-            onClose={() => {
+            onClose={(confirmed) => {
               setShowTerms(false);
-              setTermsViewed(true);
+              if (confirmed) {
+                setTermsViewed(true);
+              }
             }} 
             forceScroll={true}
           />
