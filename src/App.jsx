@@ -11,6 +11,8 @@ import { X, Map as MapIcon } from 'lucide-react';
 const TOTAL_STAMPS = Object.keys(STAMP_SPOTS).length;
 const DEBUG_PASSCODE = import.meta.env.VITE_DEBUG_PASSCODE;
 
+import TermsModal from './components/TermsModal';
+
 function App() {
   const [agreed, setAgreed] = useState(false);
   const [stamps, setStamps] = useState([]);
@@ -20,6 +22,7 @@ function App() {
   const [showPasscode, setShowPasscode] = useState(false);
   const [passcodeInput, setPasscodeInput] = useState("");
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
 
   const [isDismissed, setIsDismissed] = useState(false);
 
@@ -109,6 +112,17 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    if (showPasscode || isMapOpen || isTermsModalOpen || isScanning) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [showPasscode, isMapOpen, isTermsModalOpen, isScanning]);
+
   if (!agreed) {
     return <EntryGuard onAgreed={() => setAgreed(true)} />;
   }
@@ -150,6 +164,13 @@ function App() {
             </div>
           )}
 
+          <footer className="app-footer">
+            <p className="copyright">©2026 なずな祭実行委員会</p>
+            <button className="btn-terms-minimal" onClick={() => setIsTermsModalOpen(true)}>
+              利用規約
+            </button>
+          </footer>
+
           {/* Floating Map Button */}
           <button className="fab-map" onClick={toggleMap} aria-label="地図を表示">
             <MapIcon size={24} />
@@ -158,6 +179,10 @@ function App() {
       )}
 
       {isMapOpen && <MapModal onClose={() => setIsMapOpen(false)} />}
+      
+      {isTermsModalOpen && (
+        <TermsModal onClose={() => setIsTermsModalOpen(false)} forceScroll={false} />
+      )}
 
       {showPasscode && (
         <div className="debug-passcode-overlay" onClick={() => setShowPasscode(false)}>

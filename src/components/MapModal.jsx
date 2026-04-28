@@ -48,6 +48,14 @@ function MapModal({ onClose }) {
   const [locatingError, setLocatingError] = useState(false);
 
   useEffect(() => {
+    // Prevent background scrolling
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
+
+  useEffect(() => {
     let watchId;
 
     const requestLocation = () => {

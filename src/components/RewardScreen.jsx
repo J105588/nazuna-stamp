@@ -9,14 +9,26 @@ export const RewardScreen = ({ isExchanged, isDismissed, onExchange, onDismiss }
   useEffect(() => {
     // Dynamic clock running
     const timerId = setInterval(() => setCurrentTime(new Date()), 1000);
-    
+    return () => clearInterval(timerId);
+  }, []);
+
+  useEffect(() => {
     // Persistence check: If exchanged but not yet dismissed, show overlay
     if (isExchanged && !isDismissed) {
       setShowSuccessOverlay(true);
     }
-
-    return () => clearInterval(timerId);
   }, [isExchanged, isDismissed]);
+
+  useEffect(() => {
+    if (showSuccessOverlay) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [showSuccessOverlay]);
 
   const handleSliderChange = (e) => {
     if (isExchanged) return;
