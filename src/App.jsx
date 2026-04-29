@@ -40,10 +40,22 @@ function App() {
     const savedData = storage.load('stamp_rally_data');
     
     if (savedData) {
-      setStamps(savedData.stamps || []);
+      // Filter out any IDs that no longer exist in STAMP_SPOTS (handles security ID changes/removals)
+      const validSpotIds = Object.keys(STAMP_SPOTS);
+      const filteredStamps = (savedData.stamps || []).filter(id => validSpotIds.includes(id));
+
+      setStamps(filteredStamps);
       setIsExchanged(savedData.isExchanged || false);
       setIsDismissed(savedData.isDismissed || false);
       setIsStaffMode(savedData.isStaffMode || false);
+      
+      // If some stamps were filtered out, save the cleaned state back
+      if (filteredStamps.length !== (savedData.stamps || []).length) {
+        storage.save('stamp_rally_data', {
+          ...savedData,
+          stamps: filteredStamps
+        });
+      }
     } else {
       // Migration logic for older versions (separate keys)
       const oldStamps = storage.load('collected_stamps');
@@ -55,13 +67,17 @@ function App() {
         const migratedExchanged = oldExchanged === true;
         const migratedDismissed = oldDismissed === true;
         
-        setStamps(migratedStamps);
+        // Filter out any invalid IDs during migration too
+        const validSpotIds = Object.keys(STAMP_SPOTS);
+        const filteredMigratedStamps = migratedStamps.filter(id => validSpotIds.includes(id));
+
+        setStamps(filteredMigratedStamps);
         setIsExchanged(migratedExchanged);
         setIsDismissed(migratedDismissed);
         
         // Save to the new consolidated format
         storage.save('stamp_rally_data', {
-          stamps: migratedStamps,
+          stamps: filteredMigratedStamps,
           isExchanged: migratedExchanged,
           isDismissed: migratedDismissed
         });
@@ -115,10 +131,13 @@ function App() {
           return;
         }
 
-        setStamps(updatedData.stamps || []);
+        const validSpotIds = Object.keys(STAMP_SPOTS);
+        const filteredSyncedStamps = (updatedData.stamps || []).filter(id => validSpotIds.includes(id));
+
+        setStamps(filteredSyncedStamps);
         setIsExchanged(updatedData.isExchanged || false);
         setIsDismissed(updatedData.isDismissed || false);
-        saveState(updatedData.stamps, updatedData.isExchanged, updatedData.isDismissed);
+        saveState(filteredSyncedStamps, updatedData.isExchanged, updatedData.isDismissed);
         setCurrentSyncNonce(null); // Clear used nonce
         alert("同期が完了しました！");
       } else {
