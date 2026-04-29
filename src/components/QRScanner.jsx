@@ -111,7 +111,7 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
     setDistanceInfo(null);
 
     // Handle Synchronization Payloads (Bypass GPS)
-    if (decodedText.startsWith('ns-req:') || decodedText.startsWith('ns-res:')) {
+    if (decodedText.startsWith('nzs1:') || decodedText.startsWith('nzs2:')) {
       setIsSuccess(true);
       setStatus("同期データを検出しました");
       setTimeout(() => onScanSuccess(decodedText), 800);

@@ -83,13 +83,17 @@ function App() {
     setScannerClosedAt(Date.now());
 
     // Handle Staff Sync Request (Staff scans User)
+    // Only trigger if Staff Dashboard is already open to avoid accidental triggers by normal users
     if (decodedText.startsWith(SYNC_PREFIX.USER_DATA)) {
+      if (!isStaffDashboardOpen) {
+        console.log("Sync request ignored: Staff dashboard not open.");
+        return;
+      }
       const userData = decodeSyncData(decodedText, SYNC_PREFIX.USER_DATA);
       if (userData) {
         setScannedUserData(userData);
-        setIsStaffDashboardOpen(true);
       } else {
-        alert("ユーザーデータの読み取りに失敗しました。");
+        alert("ユーザーデータの読み取りに失敗しました。QRコードを再表示してください。");
       }
       return;
     }
