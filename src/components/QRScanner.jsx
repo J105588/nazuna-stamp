@@ -3,7 +3,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { calculateDistance, STAMP_SPOTS, MAX_DISTANCE_METERS } from '../utils/geoUtils';
 import { MapPin, XCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
-const QRScanner = ({ onScanSuccess, onCancel }) => {
+const QRScanner = ({ onScanSuccess, onCancel, isStaffDashboardOpen }) => {
   const [status, setStatus] = useState("カメラを起動しています...");
   const [distanceInfo, setDistanceInfo] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -63,6 +63,15 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
     };
 
     const setCapturing = async (text) => {
+      const trimmedText = text.trim();
+      const isUserSync = trimmedText.startsWith('nzs1:');
+      const isStaffResult = trimmedText.startsWith('nzs2:');
+
+      // If it's a User Sync QR but dashboard is not open, ignore it completely
+      if (isUserSync && !isStaffDashboardOpen) {
+        return;
+      }
+
       setStatus("検証中...");
       
       // Stop the camera BEFORE setting isCapturing=true to ensure the DOM element exists during stop()
@@ -76,7 +85,7 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
       
       if (mounted) {
         setIsCapturing(true);
-        processCheckIn(text.trim());
+        processCheckIn(trimmedText);
       }
     };
 
@@ -111,7 +120,10 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
     setDistanceInfo(null);
 
     // Handle Synchronization Payloads (Bypass GPS)
-    if (decodedText.startsWith('nzs1:') || decodedText.startsWith('nzs2:')) {
+    const isUserSync = decodedText.startsWith('nzs1:');
+    const isStaffResult = decodedText.startsWith('nzs2:');
+
+    if (isStaffResult || (isUserSync && isStaffDashboardOpen)) {
       setIsSuccess(true);
       setStatus("同期データを検出しました");
       setTimeout(() => onScanSuccess(decodedText), 800);

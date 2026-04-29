@@ -35,6 +35,15 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser }) => {
 
   const toggleExchange = () => {
     if (!scannedData) return;
+    
+    // Ensure all stamps are collected before marking as exchanged
+    const isComplete = scannedData.stamps.length >= Object.keys(STAMP_SPOTS).length;
+    
+    if (!scannedData.isExchanged && !isComplete) {
+      alert("すべてのスタンプが揃っていないため、交換済みに変更することはできません。");
+      return;
+    }
+
     setScannedData({ ...scannedData, isExchanged: !scannedData.isExchanged });
   };
 
@@ -127,7 +136,10 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser }) => {
             </div>
 
             <div className="staff-actions-grid">
-              <button className="btn-staff-action toggle-exchange" onClick={toggleExchange}>
+              <button 
+                className={`btn-staff-action toggle-exchange ${(!scannedData.isExchanged && scannedData.stamps.length < Object.keys(STAMP_SPOTS).length) ? 'disabled' : ''}`} 
+                onClick={toggleExchange}
+              >
                 <RefreshCcw size={18} />
                 交換状態を{scannedData.isExchanged ? '未交換' : '交換済'}に
               </button>

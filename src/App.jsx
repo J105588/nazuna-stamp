@@ -175,7 +175,8 @@ function App() {
       {isScanning ? (
         <QRScanner 
           onScanSuccess={handleScanSuccess} 
-          onCancel={handleCancelScan} 
+          onCancel={handleCancelScan}
+          isStaffDashboardOpen={isStaffDashboardOpen}
         />
       ) : (
         <>
