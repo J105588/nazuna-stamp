@@ -1,30 +1,30 @@
+import CryptoJS from 'crypto-js';
+
+const SECRET_KEY = import.meta.env.VITE_STORAGE_SECRET;
+
 /**
  * Sync Utilities for QR-based offline data transfer
  * 
- * Uses compact Base64 encoding (NOT encryption) for QR payloads.
- * QR codes are ephemeral screen-to-screen transfers, 
- * so AES encryption is unnecessary and causes read failures.
- * The localStorage remains encrypted via storage.js.
+ * Integrated with the same AES encryption as storage.js
+ * while maintaining data compaction to ensure QR reliability.
  */
 
 /**
  * Payload prefixes for QR communication
  */
 export const SYNC_PREFIX = {
-  USER_DATA: 'nzs1:', // User -> Staff (v1 format)
-  STAFF_DATA: 'nzs2:' // Staff -> User (v1 format)
+  USER_DATA: 'nzs1:', // User -> Staff (v1 encrypted)
+  STAFF_DATA: 'nzs2:' // Staff -> User (v1 encrypted)
 };
 
 /**
- * Compact encode: strips redundant keys to minimize QR data size.
- * Input:  { stamps: ["spot-1","spot-3"], isExchanged: true, isDismissed: false }
- * Output: { s: ["spot-1","spot-3"], e: true, d: false }
+ * Compact encode: strips redundant keys to minimize encrypted data size.
  */
 const compactify = (data) => ({
   s: data.stamps || [],
   e: !!data.isExchanged,
   d: !!data.isDismissed,
-  n: data.nonce || '' // One-time session ID
+  n: data.nonce || ''
 });
 
 const decompactify = (compact) => ({
@@ -35,18 +35,16 @@ const decompactify = (compact) => ({
 });
 
 /**
- * Encodes data into a sync string for QR display
- * @param {object} data - { stamps, isExchanged, isDismissed }
- * @param {string} prefix - SYNC_PREFIX.USER_DATA or SYNC_PREFIX.STAFF_DATA
- * @returns {string}
+ * Encodes data into an encrypted sync string for QR
  */
 export const encodeSyncData = (data, prefix) => {
   try {
+    if (!SECRET_KEY) throw new Error('Missing Secret Key');
+    
     const compact = compactify(data);
     const json = JSON.stringify(compact);
-    // Use URL-safe Base64 to avoid QR encoding issues
-    const base64 = btoa(unescape(encodeURIComponent(json)));
-    return `${prefix}${base64}`;
+    const encrypted = CryptoJS.AES.encrypt(json, SECRET_KEY).toString();
+    return `${prefix}${encrypted}`;
   } catch (error) {
     console.error('Error encoding sync data:', error);
     return '';
@@ -54,35 +52,21 @@ export const encodeSyncData = (data, prefix) => {
 };
 
 /**
- * Decodes a sync string back to data
- * @param {string} payload - Full QR string including prefix
- * @param {string} prefix - Expected prefix
- * @returns {object|null} - { stamps, isExchanged, isDismissed } or null on failure
+ * Decodes an encrypted sync string back to data
  */
 export const decodeSyncData = (payload, prefix) => {
   try {
-    if (!payload || !payload.startsWith(prefix)) {
-      console.error('Sync: prefix mismatch');
-      return null;
-    }
+    if (!payload || !payload.startsWith(prefix)) return null;
+    if (!SECRET_KEY) return null;
     
-    const base64 = payload.substring(prefix.length);
-    if (!base64) {
-      console.error('Sync: empty payload after prefix');
-      return null;
-    }
-
-    const json = decodeURIComponent(escape(atob(base64)));
-    const compact = JSON.parse(json);
-    const data = decompactify(compact);
+    const encrypted = payload.substring(prefix.length);
+    const bytes = CryptoJS.AES.decrypt(encrypted, SECRET_KEY);
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
     
-    // Validate structure
-    if (!Array.isArray(data.stamps)) {
-      console.error('Sync: invalid data structure');
-      return null;
-    }
+    if (!decrypted) return null;
 
-    return data;
+    const compact = JSON.parse(decrypted);
+    return decompactify(compact);
   } catch (error) {
     console.error('Sync decode error:', error);
     return null;

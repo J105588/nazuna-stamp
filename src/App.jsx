@@ -27,6 +27,7 @@ function App() {
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isStaffDashboardOpen, setIsStaffDashboardOpen] = useState(false);
+  const [isStaffMode, setIsStaffMode] = useState(false);
   const [isUserSyncModalOpen, setIsUserSyncModalOpen] = useState(false);
   const [syncTapCount, setSyncTapCount] = useState(0);
   const [currentSyncNonce, setCurrentSyncNonce] = useState(null);
@@ -41,6 +42,7 @@ function App() {
       setStamps(savedData.stamps || []);
       setIsExchanged(savedData.isExchanged || false);
       setIsDismissed(savedData.isDismissed || false);
+      setIsStaffMode(savedData.isStaffMode || false);
     } else {
       // Migration logic for older versions (separate keys)
       const oldStamps = storage.load('collected_stamps');
@@ -71,11 +73,12 @@ function App() {
     }
   }, []);
 
-  const saveState = (updatedStamps, updatedExchanged, updatedDismissed) => {
+  const saveState = (updatedStamps, updatedExchanged, updatedDismissed, staffMode = isStaffMode) => {
     storage.save('stamp_rally_data', {
       stamps: updatedStamps,
       isExchanged: updatedExchanged,
-      isDismissed: updatedDismissed
+      isDismissed: updatedDismissed,
+      isStaffMode: staffMode
     });
   };
 
@@ -84,9 +87,9 @@ function App() {
     setScannerClosedAt(Date.now());
 
     // Handle Staff Sync Request (Staff scans User)
-    // Only trigger if Staff Dashboard is already open to avoid accidental triggers by normal users
+    // Only trigger if Staff Dashboard is already open or in staff mode to avoid accidental triggers by normal users
     if (decodedText.startsWith(SYNC_PREFIX.USER_DATA)) {
-      if (!isStaffDashboardOpen) {
+      if (!isStaffDashboardOpen && !isStaffMode) {
         console.log("Sync request ignored: Staff dashboard not open.");
         return;
       }
@@ -149,7 +152,8 @@ function App() {
   const handlePasscodeSubmit = (e) => {
     e.preventDefault();
     if (passcodeInput === DEBUG_PASSCODE) {
-      setIsStaffDashboardOpen(true);
+      setIsStaffMode(true);
+      saveState(stamps, isExchanged, isDismissed, true);
       setShowPasscode(false);
       setPasscodeInput("");
     } else {
@@ -175,11 +179,37 @@ function App() {
 
   const isComplete = stamps.length >= TOTAL_STAMPS;
 
+  if (isStaffMode) {
+    return (
+      <div className="app-container">
+        {isScanning ? (
+          <QRScanner 
+            onScanSuccess={handleScanSuccess} 
+            onCancel={handleCancelScan}
+            isStaffDashboardOpen={true}
+          />
+        ) : (
+          <StaffDashboard 
+            initialScannedData={scannedUserData}
+            onClose={() => {
+              setScannedUserData(null);
+            }}
+            onScanUser={() => {
+              setIsScanning(true);
+            }}
+            isStaffMode={true}
+            onExitStaffMode={() => {
+              setIsStaffMode(false);
+              saveState(stamps, isExchanged, isDismissed, false);
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="app-container" onClick={() => {
-      // Global click listener to potentially reset backdoor if needed, 
-      // but we handle local reset in StampCard for specific logic
-    }}>
+    <div className="app-container">
       {isScanning ? (
         <QRScanner 
           onScanSuccess={handleScanSuccess} 

@@ -1663,3 +1663,49 @@ body {
   margin-left: 10px;
 }
 
+
+.staff-full-view {
+  min-height: 100vh;
+  background: #f2f2f7;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.staff-full-view .staff-dashboard {
+  max-height: none;
+  height: 100vh;
+  max-width: 100%;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+}
+
+.mode-badge {
+  background: var(--primary-color);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  vertical-align: middle;
+  margin-left: 5px;
+}
+
+.btn-exit-staff {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-large-staff {
+  padding: 18px 40px;
+  font-size: 1.2rem;
+  border-radius: 16px;
+  margin-top: 10px;
+}

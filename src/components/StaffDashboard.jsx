@@ -4,7 +4,7 @@ import { X, RefreshCcw, CheckCircle2, ChevronRight, Save, ScanLine, Trash2 } fro
 import { STAMP_SPOTS } from '../utils/geoUtils';
 import { encodeSyncData, SYNC_PREFIX } from '../utils/syncUtils';
 
-const StaffDashboard = ({ initialScannedData, onClose, onScanUser }) => {
+const StaffDashboard = ({ initialScannedData, onClose, onScanUser, isStaffMode = false, onExitStaffMode }) => {
   const [scannedData, setScannedData] = useState(initialScannedData);
   const [isShowingApplyQR, setIsShowingApplyQR] = useState(false);
   const [applyQRData, setApplyQRData] = useState('');
@@ -65,14 +65,18 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser }) => {
   };
 
   return (
-    <div className="staff-modal-overlay">
+    <div className={isStaffMode ? "staff-full-view" : "staff-modal-overlay"}>
       <div className="staff-dashboard">
         <header className="staff-header">
           <div className="staff-title">
             <ScanLine size={20} />
-            <h2>管理者操作パネル</h2>
+            <h2>管理者パネル {isStaffMode && <span className="mode-badge">STAFF MODE</span>}</h2>
           </div>
-          <button className="staff-close" onClick={onClose}><X size={24} /></button>
+          {isStaffMode ? (
+            <button className="btn-exit-staff" onClick={onExitStaffMode}>モード終了</button>
+          ) : (
+            <button className="staff-close" onClick={onClose}><X size={24} /></button>
+          )}
         </header>
 
         {!scannedData ? (
@@ -80,10 +84,10 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser }) => {
             <div className="empty-icon-box">
               <ScanLine size={48} />
             </div>
-            <h3>ユーザーの進捗を確認・操作</h3>
+            <h3>ユーザーをスキャン</h3>
             <p>ユーザーの「スタッフ用同期QR」をスキャンして操作を開始してください。</p>
-            <button className="btn-primary" onClick={onScanUser}>
-              ユーザーをスキャン
+            <button className="btn-primary btn-large-staff" onClick={onScanUser}>
+              スキャンを開始
             </button>
           </div>
         ) : isShowingApplyQR ? (
@@ -96,11 +100,15 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser }) => {
             </div>
 
             <div className="apply-actions">
-              <button className="btn-secondary" onClick={() => setIsShowingApplyQR(false)}>
-                編集に戻る
-              </button>
-              <button className="btn-primary" onClick={onClose}>
-                完了して閉じる
+              <button className="btn-primary" onClick={() => {
+                if (isStaffMode) {
+                  setScannedData(null);
+                  setIsShowingApplyQR(false);
+                } else {
+                  onClose();
+                }
+              }}>
+                完了
               </button>
             </div>
           </div>
@@ -142,7 +150,7 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser }) => {
                 onClick={toggleExchange}
               >
                 <RefreshCcw size={18} />
-                交換状態を{scannedData.isExchanged ? '未交換' : '交換済'}に
+                {scannedData.isExchanged ? '未交換に戻す' : '交換済みにする'}
               </button>
               <button className="btn-staff-action danger" onClick={resetUser}>
                 <Trash2 size={18} />
@@ -155,7 +163,7 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser }) => {
                 <Save size={20} /> 変更を保存してQR表示
               </button>
               <button className="btn-text-only" onClick={() => setScannedData(null)}>
-                別のユーザーをスキャン
+                キャンセルして別のユーザーをスキャン
               </button>
             </div>
           </div>
