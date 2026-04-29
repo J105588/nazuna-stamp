@@ -165,7 +165,7 @@ function App() {
   };
 
   useEffect(() => {
-    if (showPasscode || isMapOpen || isTermsModalOpen || isScanning) {
+    if (showPasscode || isMapOpen || isTermsModalOpen || isScanning || isUserSyncModalOpen || isStaffDashboardOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
@@ -173,7 +173,7 @@ function App() {
     return () => {
       document.body.style.overflow = 'auto';
     };
-  }, [showPasscode, isMapOpen, isTermsModalOpen, isScanning]);
+  }, [showPasscode, isMapOpen, isTermsModalOpen, isScanning, isUserSyncModalOpen, isStaffDashboardOpen]);
 
   if (!agreed) {
     return <EntryGuard onAgreed={() => setAgreed(true)} />;
