@@ -29,6 +29,7 @@ function App() {
   const [isStaffDashboardOpen, setIsStaffDashboardOpen] = useState(false);
   const [isUserSyncModalOpen, setIsUserSyncModalOpen] = useState(false);
   const [syncTapCount, setSyncTapCount] = useState(0);
+  const [currentSyncNonce, setCurrentSyncNonce] = useState(null);
   const [scannedUserData, setScannedUserData] = useState(null);
   const [isDismissed, setIsDismissed] = useState(false);
 
@@ -102,10 +103,17 @@ function App() {
     if (decodedText.startsWith(SYNC_PREFIX.STAFF_DATA)) {
       const updatedData = decodeSyncData(decodedText, SYNC_PREFIX.STAFF_DATA);
       if (updatedData) {
+        // Security check: Compare nonce
+        if (updatedData.nonce !== currentSyncNonce) {
+          alert("この同期用QRコードはあなたの端末用ではありません。別のユーザーのデータである可能性があります。");
+          return;
+        }
+
         setStamps(updatedData.stamps || []);
         setIsExchanged(updatedData.isExchanged || false);
         setIsDismissed(updatedData.isDismissed || false);
         saveState(updatedData.stamps, updatedData.isExchanged, updatedData.isDismissed);
+        setCurrentSyncNonce(null); // Clear used nonce
         alert("同期が完了しました！");
       } else {
         alert("同期データの復号に失敗しました。");
@@ -209,6 +217,9 @@ function App() {
               onClick={() => {
                 const newCount = syncTapCount + 1;
                 if (newCount >= 5) {
+                  // Generate a simple random nonce for this session
+                  const nonce = Math.random().toString(36).substring(2, 10);
+                  setCurrentSyncNonce(nonce);
                   setIsUserSyncModalOpen(true);
                   setSyncTapCount(0);
                 } else {
@@ -241,7 +252,7 @@ function App() {
       {isUserSyncModalOpen && (
         <UserSyncModal 
           onClose={() => setIsUserSyncModalOpen(false)} 
-          userData={{ stamps, isExchanged, isDismissed }}
+          userData={{ stamps, isExchanged, isDismissed, nonce: currentSyncNonce }}
         />
       )}
 

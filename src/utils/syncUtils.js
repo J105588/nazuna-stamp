@@ -23,13 +23,15 @@ export const SYNC_PREFIX = {
 const compactify = (data) => ({
   s: data.stamps || [],
   e: !!data.isExchanged,
-  d: !!data.isDismissed
+  d: !!data.isDismissed,
+  n: data.nonce || '' // One-time session ID
 });
 
 const decompactify = (compact) => ({
   stamps: compact.s || [],
   isExchanged: !!compact.e,
-  isDismissed: !!compact.d
+  isDismissed: !!compact.d,
+  nonce: compact.n || ''
 });
 
 /**

@@ -52,7 +52,8 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser }) => {
       setScannedData({
         stamps: [],
         isExchanged: false,
-        isDismissed: false
+        isDismissed: false,
+        nonce: scannedData.nonce // Keep the session nonce
       });
     }
   };
