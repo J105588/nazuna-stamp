@@ -6,7 +6,10 @@ import RewardScreen from './components/RewardScreen';
 import MapModal from './components/MapModal';
 import { STAMP_SPOTS } from './utils/geoUtils';
 import { storage } from './utils/storage';
-import { X, Map as MapIcon } from 'lucide-react';
+import { X, Map as MapIcon, Settings } from 'lucide-react';
+import StaffDashboard from './components/StaffDashboard';
+import UserSyncModal from './components/UserSyncModal';
+import { decodeSyncData, SYNC_PREFIX } from './utils/syncUtils';
 
 const TOTAL_STAMPS = Object.keys(STAMP_SPOTS).length;
 const DEBUG_PASSCODE = import.meta.env.VITE_DEBUG_PASSCODE;
@@ -23,7 +26,10 @@ function App() {
   const [passcodeInput, setPasscodeInput] = useState("");
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
-
+  const [isStaffDashboardOpen, setIsStaffDashboardOpen] = useState(false);
+  const [isUserSyncModalOpen, setIsUserSyncModalOpen] = useState(false);
+  const [syncTapCount, setSyncTapCount] = useState(0);
+  const [scannedUserData, setScannedUserData] = useState(null);
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
@@ -72,9 +78,39 @@ function App() {
     });
   };
 
-  const handleScanSuccess = (qrId) => {
+  const handleScanSuccess = (decodedText) => {
     setIsScanning(false);
     setScannerClosedAt(Date.now());
+
+    // Handle Staff Sync Request (Staff scans User)
+    if (decodedText.startsWith(SYNC_PREFIX.USER_DATA)) {
+      const userData = decodeSyncData(decodedText, SYNC_PREFIX.USER_DATA);
+      if (userData) {
+        setScannedUserData(userData);
+        setIsStaffDashboardOpen(true);
+      } else {
+        alert("ユーザーデータの読み取りに失敗しました。");
+      }
+      return;
+    }
+
+    // Handle Sync Response (User scans Staff)
+    if (decodedText.startsWith(SYNC_PREFIX.STAFF_DATA)) {
+      const updatedData = decodeSyncData(decodedText, SYNC_PREFIX.STAFF_DATA);
+      if (updatedData) {
+        setStamps(updatedData.stamps || []);
+        setIsExchanged(updatedData.isExchanged || false);
+        setIsDismissed(updatedData.isDismissed || false);
+        saveState(updatedData.stamps, updatedData.isExchanged, updatedData.isDismissed);
+        alert("同期が完了しました！");
+      } else {
+        alert("同期データの復号に失敗しました。");
+      }
+      return;
+    }
+
+    // Normal Stamp Scan
+    const qrId = decodedText;
     if (!stamps.includes(qrId)) {
       const newStamps = [...stamps, qrId];
       setStamps(newStamps);
@@ -101,9 +137,7 @@ function App() {
   const handlePasscodeSubmit = (e) => {
     e.preventDefault();
     if (passcodeInput === DEBUG_PASSCODE) {
-      const allSpotIds = Object.keys(STAMP_SPOTS);
-      setStamps(allSpotIds);
-      saveState(allSpotIds, isExchanged, isDismissed);
+      setIsStaffDashboardOpen(true);
       setShowPasscode(false);
       setPasscodeInput("");
     } else {
@@ -165,7 +199,22 @@ function App() {
           )}
 
           <footer className="app-footer">
-            <p className="copyright">©2026 なずな祭実行委員会</p>
+            <p 
+              className="copyright" 
+              onClick={() => {
+                const newCount = syncTapCount + 1;
+                if (newCount >= 5) {
+                  setIsUserSyncModalOpen(true);
+                  setSyncTapCount(0);
+                } else {
+                  setSyncTapCount(newCount);
+                  // Auto reset after 3 seconds of inactivity
+                  setTimeout(() => setSyncTapCount(0), 3000);
+                }
+              }}
+            >
+              ©2026 なずな祭実行委員会
+            </p>
             <button className="btn-terms-minimal" onClick={() => setIsTermsModalOpen(true)}>
               利用規約
             </button>
@@ -182,6 +231,26 @@ function App() {
       
       {isTermsModalOpen && (
         <TermsModal onClose={() => setIsTermsModalOpen(false)} forceScroll={false} />
+      )}
+
+      {isUserSyncModalOpen && (
+        <UserSyncModal 
+          onClose={() => setIsUserSyncModalOpen(false)} 
+          userData={{ stamps, isExchanged, isDismissed }}
+        />
+      )}
+
+      {isStaffDashboardOpen && (
+        <StaffDashboard 
+          initialScannedData={scannedUserData}
+          onClose={() => {
+            setIsStaffDashboardOpen(false);
+            setScannedUserData(null);
+          }}
+          onScanUser={() => {
+            setIsScanning(true);
+          }}
+        />
       )}
 
       {showPasscode && (

@@ -106,24 +106,30 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
     };
   }, []);
 
-  const processCheckIn = (qrId) => {
+  const processCheckIn = (decodedText) => {
     setIsProcessing(true);
     setDistanceInfo(null);
-    // statusは既に "検証中..." になっている
 
+    // Handle Synchronization Payloads (Bypass GPS)
+    if (decodedText.startsWith('ns-req:') || decodedText.startsWith('ns-res:')) {
+      setIsSuccess(true);
+      setStatus("同期データを検出しました");
+      setTimeout(() => onScanSuccess(decodedText), 800);
+      return;
+    }
+
+    // Normal Stamp Spot Logic
+    const qrId = decodedText;
     if (!navigator.geolocation) {
       alert("GPSに対応していません。");
       resetScannerStates();
       return;
     }
 
-    // Store the current QR ID for potential retries
-    const currentQrId = qrId;
-
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
-        const target = STAMP_SPOTS[currentQrId];
+        const target = STAMP_SPOTS[qrId];
 
         if (!target) {
           setStatus(`無効なチェックポイントです`);
@@ -136,11 +142,11 @@ const QRScanner = ({ onScanSuccess, onCancel }) => {
         if (distance <= MAX_DISTANCE_METERS) {
           setIsSuccess(true);
           setStatus("チェックイン完了！");
-          setTimeout(() => onScanSuccess(currentQrId), 1500);
+          setTimeout(() => onScanSuccess(qrId), 1500);
         } else {
           setDistanceInfo({
             distance: Math.round(distance),
-            qrId: currentQrId
+            qrId: qrId
           });
           setStatus("掲示位置から離れています");
         }
