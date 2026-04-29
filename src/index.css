@@ -573,7 +573,7 @@ body {
   background: rgba(28, 28, 30, 0.95);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  z-index: 999;
+  z-index: 3000;
   display: flex;
   align-items: center;
   justify-content: center;
