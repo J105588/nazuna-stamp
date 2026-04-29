@@ -38,7 +38,7 @@ function App() {
   useEffect(() => {
     // Load state from consolidated storage
     const savedData = storage.load('stamp_rally_data');
-    
+
     if (savedData) {
       // Filter out any IDs that no longer exist in STAMP_SPOTS (handles security ID changes/removals)
       const validSpotIds = Object.keys(STAMP_SPOTS);
@@ -48,7 +48,7 @@ function App() {
       setIsExchanged(savedData.isExchanged || false);
       setIsDismissed(savedData.isDismissed || false);
       setIsStaffMode(savedData.isStaffMode || false);
-      
+
       // If some stamps were filtered out, save the cleaned state back
       if (filteredStamps.length !== (savedData.stamps || []).length) {
         storage.save('stamp_rally_data', {
@@ -61,12 +61,12 @@ function App() {
       const oldStamps = storage.load('collected_stamps');
       const oldExchanged = storage.load('is_exchanged');
       const oldDismissed = storage.load('reward_overlay_dismissed');
-      
+
       if (oldStamps !== null || oldExchanged !== null || oldDismissed !== null) {
         const migratedStamps = oldStamps || [];
         const migratedExchanged = oldExchanged === true;
         const migratedDismissed = oldDismissed === true;
-        
+
         // Filter out any invalid IDs during migration too
         const validSpotIds = Object.keys(STAMP_SPOTS);
         const filteredMigratedStamps = migratedStamps.filter(id => validSpotIds.includes(id));
@@ -74,14 +74,14 @@ function App() {
         setStamps(filteredMigratedStamps);
         setIsExchanged(migratedExchanged);
         setIsDismissed(migratedDismissed);
-        
+
         // Save to the new consolidated format
         storage.save('stamp_rally_data', {
           stamps: filteredMigratedStamps,
           isExchanged: migratedExchanged,
           isDismissed: migratedDismissed
         });
-        
+
         // Clean up old keys
         storage.remove('collected_stamps');
         storage.remove('is_exchanged');
@@ -206,13 +206,13 @@ function App() {
     return (
       <div className="app-container">
         {isScanning ? (
-          <QRScanner 
-            onScanSuccess={handleScanSuccess} 
+          <QRScanner
+            onScanSuccess={handleScanSuccess}
             onCancel={handleCancelScan}
             isStaffDashboardOpen={true}
           />
         ) : (
-          <StaffDashboard 
+          <StaffDashboard
             initialScannedData={scannedUserData}
             onClose={() => {
               setScannedUserData(null);
@@ -234,28 +234,28 @@ function App() {
   return (
     <div className="app-container">
       {isScanning ? (
-        <QRScanner 
-          onScanSuccess={handleScanSuccess} 
+        <QRScanner
+          onScanSuccess={handleScanSuccess}
           onCancel={handleCancelScan}
           isStaffDashboardOpen={isStaffDashboardOpen}
         />
       ) : (
         <>
-          <StampCard 
-            stamps={stamps} 
-            totalStamps={TOTAL_STAMPS} 
+          <StampCard
+            stamps={stamps}
+            totalStamps={TOTAL_STAMPS}
             isExchanged={isExchanged}
-            onOpenCamera={() => setIsScanning(true)} 
+            onOpenCamera={() => setIsScanning(true)}
             scannerClosedAt={scannerClosedAt}
             onBackdoorAction={() => setShowPasscode(true)}
           />
-          
+
           {isComplete && (
             <div className="reward-section-wrapper">
-              <RewardScreen 
-                isExchanged={isExchanged} 
+              <RewardScreen
+                isExchanged={isExchanged}
                 isDismissed={isDismissed}
-                onExchange={handleExchange} 
+                onExchange={handleExchange}
                 onDismiss={() => {
                   setIsDismissed(true);
                   saveState(stamps, isExchanged, true);
@@ -265,8 +265,8 @@ function App() {
           )}
 
           <footer className="app-footer">
-            <p 
-              className="copyright" 
+            <p
+              className="copyright"
               onClick={() => {
                 const newCount = syncTapCount + 1;
                 if (newCount >= 5) {
@@ -297,21 +297,21 @@ function App() {
       )}
 
       {isMapOpen && <MapModal onClose={() => setIsMapOpen(false)} />}
-      
+
       {isTermsModalOpen && (
         <TermsModal onClose={() => setIsTermsModalOpen(false)} forceScroll={false} />
       )}
 
       {isUserSyncModalOpen && (
-        <UserSyncModal 
-          onClose={() => setIsUserSyncModalOpen(false)} 
+        <UserSyncModal
+          onClose={() => setIsUserSyncModalOpen(false)}
           userData={{ stamps, isExchanged, isDismissed, nonce: currentSyncNonce }}
           onScan={() => setIsScanning(true)}
         />
       )}
 
       {isStaffDashboardOpen && (
-        <StaffDashboard 
+        <StaffDashboard
           initialScannedData={scannedUserData}
           onClose={() => {
             setIsStaffDashboardOpen(false);
@@ -332,8 +332,8 @@ function App() {
             <h3>管理者認証</h3>
             <p>パスコードを入力してください</p>
             <form onSubmit={handlePasscodeSubmit}>
-              <input 
-                type="password" 
+              <input
+                type="password"
                 inputMode="numeric"
                 maxLength={4}
                 value={passcodeInput}
