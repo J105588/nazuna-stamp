@@ -86,9 +86,11 @@ function App() {
     setIsScanning(false);
     setScannerClosedAt(Date.now());
 
+    const lowerDecodedText = decodedText.toLowerCase();
+
     // Handle Staff Sync Request (Staff scans User)
     // Only trigger if Staff Dashboard is already open or in staff mode to avoid accidental triggers by normal users
-    if (decodedText.startsWith(SYNC_PREFIX.USER_DATA)) {
+    if (lowerDecodedText.startsWith(SYNC_PREFIX.USER_DATA)) {
       if (!isStaffDashboardOpen && !isStaffMode) {
         console.log("Sync request ignored: Staff dashboard not open.");
         return;
@@ -103,7 +105,7 @@ function App() {
     }
 
     // Handle Sync Response (User scans Staff)
-    if (decodedText.startsWith(SYNC_PREFIX.STAFF_DATA)) {
+    if (lowerDecodedText.startsWith(SYNC_PREFIX.STAFF_DATA)) {
       const updatedData = decodeSyncData(decodedText, SYNC_PREFIX.STAFF_DATA);
       if (updatedData) {
         // Security check: Compare nonce

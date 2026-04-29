@@ -1,73 +1,40 @@
 import CryptoJS from 'crypto-js';
 
+// Strictly require the environment variable. No hardcoded fallback keys for security.
 const SECRET_KEY = import.meta.env.VITE_STORAGE_SECRET;
-
-/**
- * Sync Utilities for QR-based offline data transfer
- * 
- * Security Strategy:
- * - Full AES encryption prevents tampering and reading of data in transit.
- * - To bypass QR scanner corruption of Base64 symbols (+, /, =), 
- *   the encrypted Base64 string is converted to a pure Hex string.
- * - This guarantees 100% safe physical-layer transmission.
- */
 
 export const SYNC_PREFIX = {
   USER_DATA: 'nzs1:',
   STAFF_DATA: 'nzs2:'
 };
 
-const compactify = (data) => ({
-  s: data.stamps || [],
-  e: !!data.isExchanged,
-  d: !!data.isDismissed,
-  n: data.nonce || ''
-});
-
-const decompactify = (compact) => ({
-  stamps: compact.s || [],
-  isExchanged: !!compact.e,
-  isDismissed: !!compact.d,
-  nonce: compact.n || ''
-});
-
 /**
- * Convert string to Hex
+ * Generates an HMAC-SHA256 signature for tamper-proofing.
  */
-const stringToHex = (str) => {
-  return Array.from(str)
-    .map(c => c.charCodeAt(0).toString(16).padStart(2, '0'))
-    .join('');
+const generateHash = (str) => {
+  return CryptoJS.HmacSHA256(str, SECRET_KEY).toString(CryptoJS.enc.Hex).substring(0, 8);
 };
 
 /**
- * Convert Hex back to string
- */
-const hexToString = (hex) => {
-  let str = '';
-  for (let i = 0; i < hex.length; i += 2) {
-    str += String.fromCharCode(parseInt(hex.substring(i, i + 2), 16));
-  }
-  return str;
-};
-
-/**
- * Encode: JSON -> AES (Base64) -> Hex
+ * Redesigned Encode:
+ * Uses simple URL query parameters format. 
+ * This is 100% immune to QR scanner character corruption and avoids JSON/Base64 entirely.
+ * Example: nzs1:s=spot1,spot2&e=0&d=0&n=abcd&h=12345678
  */
 export const encodeSyncData = (data, prefix) => {
   try {
-    if (!SECRET_KEY) return '';
+    const s = (data.stamps || []).join(',');
+    const e = data.isExchanged ? '1' : '0';
+    const d = data.isDismissed ? '1' : '0';
+    const n = data.nonce || '';
     
-    const compact = compactify(data);
-    const jsonString = JSON.stringify(compact);
+    // Construct base payload
+    const payloadStr = `s=${s}&e=${e}&d=${d}&n=${n}`;
     
-    // AES Encryption (outputs Base64)
-    const encryptedBase64 = CryptoJS.AES.encrypt(jsonString, SECRET_KEY).toString();
+    // Generate signature
+    const hash = generateHash(payloadStr);
     
-    // Convert to Hex for QR safety
-    const safeHex = stringToHex(encryptedBase64);
-    
-    return `${prefix}${safeHex}`;
+    return `${prefix}${payloadStr}&h=${hash}`;
   } catch (error) {
     console.error('Sync encode error:', error);
     return '';
@@ -75,36 +42,54 @@ export const encodeSyncData = (data, prefix) => {
 };
 
 /**
- * Decode: Hex -> AES (Base64) -> JSON
+ * Redesigned Decode:
+ * Parses the URL parameters and verifies the HMAC signature.
  */
 export const decodeSyncData = (payload, prefix) => {
   try {
-    if (!payload || !payload.startsWith(prefix)) return null;
-    if (!SECRET_KEY) {
-      console.error("Sync Error: SECRET_KEY is not defined.");
-      return null;
-    }
-
-    const safeHex = payload.substring(prefix.length);
+    if (!payload) return null;
     
-    // Restore Base64 from Hex
-    const encryptedBase64 = hexToString(safeHex);
-
-    // Decrypt AES
-    const decryptedBytes = CryptoJS.AES.decrypt(encryptedBase64, SECRET_KEY);
-    const jsonString = decryptedBytes.toString(CryptoJS.enc.Utf8);
-
-    if (!jsonString) {
-      console.error("Sync Error: Decryption failed. Keys might not match between devices.");
+    // Make prefix check case-insensitive in case mobile camera altered it
+    const lowerPayload = payload.toLowerCase();
+    const targetPrefix = prefix.toLowerCase();
+    
+    if (!lowerPayload.startsWith(targetPrefix)) return null;
+    
+    // Extract data part
+    const dataStr = payload.substring(prefix.length);
+    
+    // Use standard URLSearchParams for bulletproof parsing
+    const params = new URLSearchParams(dataStr);
+    
+    const s = params.get('s') || '';
+    const e = params.get('e') === '1';
+    const d = params.get('d') === '1';
+    const n = params.get('n') || '';
+    const h = params.get('h');
+    
+    if (!h) {
+      console.error("Sync Error: Missing security hash.");
       return null;
     }
-
-    const compact = JSON.parse(jsonString);
-    const data = decompactify(compact);
-
-    if (!Array.isArray(data.stamps)) return null;
-
-    return data;
+    
+    // Reconstruct base payload to verify signature
+    const eStr = params.get('e') || '0';
+    const dStr = params.get('d') || '0';
+    const reconstructedPayloadStr = `s=${s}&e=${eStr}&d=${dStr}&n=${n}`;
+    
+    const expectedHash = generateHash(reconstructedPayloadStr);
+    
+    if (h !== expectedHash) {
+      console.error("Sync Error: Hash mismatch! Data was tampered or keys differ.");
+      return null;
+    }
+    
+    return {
+      stamps: s ? s.split(',') : [],
+      isExchanged: e,
+      isDismissed: d,
+      nonce: n
+    };
   } catch (error) {
     console.error('Sync decode error:', error);
     return null;

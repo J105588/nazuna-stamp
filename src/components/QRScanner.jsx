@@ -64,8 +64,9 @@ const QRScanner = ({ onScanSuccess, onCancel, isStaffDashboardOpen }) => {
 
     const setCapturing = async (text) => {
       const trimmedText = text.trim();
-      const isUserSync = trimmedText.startsWith('nzs1:');
-      const isStaffResult = trimmedText.startsWith('nzs2:');
+      const lowerText = trimmedText.toLowerCase();
+      const isUserSync = lowerText.startsWith('nzs1:');
+      const isStaffResult = lowerText.startsWith('nzs2:');
 
       // If it's a User Sync QR but dashboard is not open, ignore it completely
       if (isUserSync && !isStaffDashboardOpen) {
@@ -120,8 +121,9 @@ const QRScanner = ({ onScanSuccess, onCancel, isStaffDashboardOpen }) => {
     setDistanceInfo(null);
 
     // Handle Synchronization Payloads (Bypass GPS)
-    const isUserSync = decodedText.startsWith('nzs1:');
-    const isStaffResult = decodedText.startsWith('nzs2:');
+    const lowerText = decodedText.toLowerCase();
+    const isUserSync = lowerText.startsWith('nzs1:');
+    const isStaffResult = lowerText.startsWith('nzs2:');
 
     if (isStaffResult || (isUserSync && isStaffDashboardOpen)) {
       setIsSuccess(true);
