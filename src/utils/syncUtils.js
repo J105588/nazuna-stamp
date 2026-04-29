@@ -5,21 +5,17 @@ const SECRET_KEY = import.meta.env.VITE_STORAGE_SECRET;
 /**
  * Sync Utilities for QR-based offline data transfer
  * 
- * Integrated with the same AES encryption as storage.js
- * while maintaining data compaction to ensure QR reliability.
+ * Uses the same AES encryption as storage.js, but converts the output
+ * to hex encoding (0-9, a-f only) for reliable QR code transmission.
+ * Standard Base64 characters (+, /, =) are known to be corrupted
+ * by some QR code scanners, causing decryption failures.
  */
 
-/**
- * Payload prefixes for QR communication
- */
 export const SYNC_PREFIX = {
-  USER_DATA: 'nzs1:', // User -> Staff (v1 encrypted)
-  STAFF_DATA: 'nzs2:' // Staff -> User (v1 encrypted)
+  USER_DATA: 'nzs1:',
+  STAFF_DATA: 'nzs2:'
 };
 
-/**
- * Compact encode: strips redundant keys to minimize encrypted data size.
- */
 const compactify = (data) => ({
   s: data.stamps || [],
   e: !!data.isExchanged,
@@ -35,37 +31,61 @@ const decompactify = (compact) => ({
 });
 
 /**
- * Encodes data into an encrypted sync string for QR
+ * Encodes data into an encrypted, QR-safe sync string.
+ * Flow: JSON -> AES encrypt -> Base64 -> Hex (QR-safe)
  */
 export const encodeSyncData = (data, prefix) => {
   try {
-    if (!SECRET_KEY) throw new Error('Missing Secret Key');
-    
+    if (!SECRET_KEY) {
+      console.error('Sync: SECRET_KEY is not defined');
+      return '';
+    }
+
     const compact = compactify(data);
     const json = JSON.stringify(compact);
-    const encrypted = CryptoJS.AES.encrypt(json, SECRET_KEY).toString();
-    return `${prefix}${encrypted}`;
+
+    // AES encrypt (produces Base64 OpenSSL format)
+    const base64Encrypted = CryptoJS.AES.encrypt(json, SECRET_KEY).toString();
+
+    // Convert Base64 to Hex for QR safety
+    const wordArray = CryptoJS.enc.Base64.parse(base64Encrypted);
+    const hex = CryptoJS.enc.Hex.stringify(wordArray);
+
+    return `${prefix}${hex}`;
   } catch (error) {
-    console.error('Error encoding sync data:', error);
+    console.error('Sync encode error:', error);
     return '';
   }
 };
 
 /**
- * Decodes an encrypted sync string back to data
+ * Decodes an encrypted sync string back to data.
+ * Flow: Hex -> Base64 -> AES decrypt -> JSON
  */
 export const decodeSyncData = (payload, prefix) => {
   try {
     if (!payload || !payload.startsWith(prefix)) return null;
-    if (!SECRET_KEY) return null;
-    
-    const encrypted = payload.substring(prefix.length);
-    const bytes = CryptoJS.AES.decrypt(encrypted, SECRET_KEY);
-    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-    
-    if (!decrypted) return null;
+    if (!SECRET_KEY) {
+      console.error('Sync: SECRET_KEY is missing');
+      return null;
+    }
 
-    const compact = JSON.parse(decrypted);
+    const hex = payload.substring(prefix.length);
+
+    // Convert Hex back to Base64 (OpenSSL format)
+    const wordArray = CryptoJS.enc.Hex.parse(hex);
+    const base64Encrypted = CryptoJS.enc.Base64.stringify(wordArray);
+
+    // AES decrypt
+    const decrypted = CryptoJS.AES.decrypt(base64Encrypted, SECRET_KEY);
+    const json = decrypted.toString(CryptoJS.enc.Utf8);
+
+    if (!json) {
+      console.error('Sync: Decryption failed (empty result)');
+      return null;
+    }
+
+    const compact = JSON.parse(json);
     return decompactify(compact);
   } catch (error) {
     console.error('Sync decode error:', error);

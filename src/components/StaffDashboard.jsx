@@ -64,6 +64,9 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser, isStaffMode =
     setIsShowingApplyQR(true);
   };
 
+  const keyCheck = import.meta.env.VITE_STORAGE_SECRET ? 
+    import.meta.env.VITE_STORAGE_SECRET.length + import.meta.env.VITE_STORAGE_SECRET.substring(0, 1) : 'None';
+
   return (
     <div className={isStaffMode ? "staff-full-view" : "staff-modal-overlay"}>
       <div className="staff-dashboard">
@@ -71,6 +74,7 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser, isStaffMode =
           <div className="staff-title">
             <ScanLine size={20} />
             <h2>管理者パネル {isStaffMode && <span className="mode-badge">STAFF MODE</span>}</h2>
+            <span className="key-indicator" title="Encryption Key ID">🔑 {keyCheck}</span>
           </div>
           {isStaffMode ? (
             <button className="btn-exit-staff" onClick={onExitStaffMode}>モード終了</button>
