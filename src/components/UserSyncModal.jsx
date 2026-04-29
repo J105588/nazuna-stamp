@@ -1,9 +1,9 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, ShieldCheck } from 'lucide-react';
+import { X, ShieldCheck, Camera } from 'lucide-react';
 import { encodeSyncData, SYNC_PREFIX } from '../utils/syncUtils';
 
-const UserSyncModal = ({ onClose, userData }) => {
+const UserSyncModal = ({ onClose, userData, onScan }) => {
   const syncPayload = encodeSyncData(userData, SYNC_PREFIX.USER_DATA);
 
   return (
@@ -25,8 +25,16 @@ const UserSyncModal = ({ onClose, userData }) => {
         </div>
 
         <div className="sync-footer">
-          <p className="sync-warning">※このQRコードにはあなたの現在の進捗データが含まれています。</p>
-          <button className="btn-secondary" onClick={onClose}>とじる</button>
+          <p className="sync-warning">※スタッフが操作を完了した後、以下のボタンで確認QRを読み取ってください。</p>
+          <div className="sync-actions">
+            <button className="btn-primary btn-scan-inline" onClick={() => {
+              onClose();
+              onScan();
+            }}>
+              <Camera size={18} />
+              スタッフのQRをスキャン
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -285,6 +285,7 @@ function App() {
         <UserSyncModal 
           onClose={() => setIsUserSyncModalOpen(false)} 
           userData={{ stamps, isExchanged, isDismissed, nonce: currentSyncNonce }}
+          onScan={() => setIsScanning(true)}
         />
       )}
 
