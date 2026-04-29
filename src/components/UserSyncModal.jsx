@@ -21,7 +21,7 @@ const UserSyncModal = ({ onClose, userData }) => {
         </p>
 
         <div className="qr-container-sync">
-          <QRCodeSVG value={syncPayload} size={220} level="M" includeMargin />
+          <QRCodeSVG value={syncPayload} size={220} level="L" includeMargin />
         </div>
 
         <div className="sync-footer">

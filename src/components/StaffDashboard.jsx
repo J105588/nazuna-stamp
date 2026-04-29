@@ -64,9 +64,6 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser, isStaffMode =
     setIsShowingApplyQR(true);
   };
 
-  const keyCheck = import.meta.env.VITE_STORAGE_SECRET ? 
-    import.meta.env.VITE_STORAGE_SECRET.length + import.meta.env.VITE_STORAGE_SECRET.substring(0, 1) : 'None';
-
   return (
     <div className={isStaffMode ? "staff-full-view" : "staff-modal-overlay"}>
       <div className="staff-dashboard">
@@ -74,7 +71,6 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser, isStaffMode =
           <div className="staff-title">
             <ScanLine size={20} />
             <h2>管理者パネル {isStaffMode && <span className="mode-badge">STAFF MODE</span>}</h2>
-            <span className="key-indicator" title="Encryption Key ID">🔑 {keyCheck}</span>
           </div>
           {isStaffMode ? (
             <button className="btn-exit-staff" onClick={onExitStaffMode}>モード終了</button>
@@ -100,7 +96,7 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser, isStaffMode =
             <p>ユーザーの端末でこのQRをスキャンしてもらってください。</p>
             
             <div className="qr-container-large">
-              <QRCodeSVG value={applyQRData} size={240} level="H" includeMargin />
+              <QRCodeSVG value={applyQRData} size={240} level="L" includeMargin />
             </div>
 
             <div className="apply-actions">
