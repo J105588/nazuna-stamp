@@ -2,15 +2,6 @@ import CryptoJS from 'crypto-js';
 
 const SECRET_KEY = import.meta.env.VITE_STORAGE_SECRET;
 
-/**
- * Sync Utilities for QR-based offline data transfer
- * 
- * Uses the same AES encryption as storage.js, but converts the output
- * to hex encoding (0-9, a-f only) for reliable QR code transmission.
- * Standard Base64 characters (+, /, =) are known to be corrupted
- * by some QR code scanners, causing decryption failures.
- */
-
 export const SYNC_PREFIX = {
   USER_DATA: 'nzs1:',
   STAFF_DATA: 'nzs2:'
@@ -32,26 +23,42 @@ const decompactify = (compact) => ({
 
 /**
  * Encodes data into an encrypted, QR-safe sync string.
- * Flow: JSON -> AES encrypt -> Base64 -> Hex (QR-safe)
  */
 export const encodeSyncData = (data, prefix) => {
   try {
-    if (!SECRET_KEY) {
-      console.error('Sync: SECRET_KEY is not defined');
-      return '';
-    }
+    if (!SECRET_KEY) return '';
 
     const compact = compactify(data);
     const json = JSON.stringify(compact);
 
-    // AES encrypt (produces Base64 OpenSSL format)
+    // AES encrypt
     const base64Encrypted = CryptoJS.AES.encrypt(json, SECRET_KEY).toString();
 
-    // Convert Base64 to Hex for QR safety
+    // Base64 -> Hex for QR safety
     const wordArray = CryptoJS.enc.Base64.parse(base64Encrypted);
     const hex = CryptoJS.enc.Hex.stringify(wordArray);
 
-    return `${prefix}${hex}`;
+    // === SELF-TEST: immediately verify we can decode what we just encoded ===
+    const testWordArray = CryptoJS.enc.Hex.parse(hex);
+    const testBase64 = CryptoJS.enc.Base64.stringify(testWordArray);
+    const testDecrypted = CryptoJS.AES.decrypt(testBase64, SECRET_KEY);
+    const testJson = testDecrypted.toString(CryptoJS.enc.Utf8);
+    
+    if (testJson === json) {
+      console.log('✅ Sync self-test PASSED. Roundtrip OK.');
+    } else {
+      console.error('❌ Sync self-test FAILED!');
+      console.error('  Original JSON:', json);
+      console.error('  Roundtrip JSON:', testJson);
+      console.error('  Base64 original:', base64Encrypted);
+      console.error('  Base64 after hex roundtrip:', testBase64);
+    }
+
+    const fullPayload = `${prefix}${hex}`;
+    console.log(`Encoded payload length: ${fullPayload.length} chars`);
+    console.log(`Full payload: ${fullPayload}`);
+
+    return fullPayload;
   } catch (error) {
     console.error('Sync encode error:', error);
     return '';
@@ -60,33 +67,34 @@ export const encodeSyncData = (data, prefix) => {
 
 /**
  * Decodes an encrypted sync string back to data.
- * Flow: Hex -> Base64 -> AES decrypt -> JSON
  */
 export const decodeSyncData = (payload, prefix) => {
   try {
     if (!payload || !payload.startsWith(prefix)) return null;
-    if (!SECRET_KEY) {
-      console.error('Sync: SECRET_KEY is missing');
-      return null;
-    }
+    if (!SECRET_KEY) return null;
 
     const hex = payload.substring(prefix.length);
+    
+    console.log(`Decode: received hex length: ${hex.length}`);
+    console.log(`Decode: full payload: ${payload}`);
 
-    // Convert Hex back to Base64 (OpenSSL format)
+    // Hex -> Base64
     const wordArray = CryptoJS.enc.Hex.parse(hex);
     const base64Encrypted = CryptoJS.enc.Base64.stringify(wordArray);
+    
+    console.log(`Decode: reconstructed Base64: ${base64Encrypted}`);
 
     // AES decrypt
     const decrypted = CryptoJS.AES.decrypt(base64Encrypted, SECRET_KEY);
     const json = decrypted.toString(CryptoJS.enc.Utf8);
 
     if (!json) {
-      console.error('Sync: Decryption failed (empty result)');
+      console.error('Sync: Decryption produced empty result');
+      console.error('  Key len:', SECRET_KEY.length, 'starts with:', SECRET_KEY[0]);
       return null;
     }
 
-    const compact = JSON.parse(json);
-    return decompactify(compact);
+    return decompactify(JSON.parse(json));
   } catch (error) {
     console.error('Sync decode error:', error);
     return null;
