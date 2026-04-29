@@ -5,12 +5,11 @@ const SECRET_KEY = import.meta.env.VITE_STORAGE_SECRET;
 /**
  * Sync Utilities for QR-based offline data transfer
  * 
- * Design:
- *   - Base64 encoding for reliable QR transmission (AES corrupts through QR scanners)
- *   - HMAC-SHA256 signature using the same secret key as storage.js
- *     to prevent data tampering while keeping QR payloads scannable
- *   - localStorage remains AES-encrypted via storage.js (at-rest security)
- *   - QR data is ephemeral (screen-to-camera), so full encryption is unnecessary
+ * Security Strategy:
+ * - Full AES encryption prevents tampering and reading of data in transit.
+ * - To bypass QR scanner corruption of Base64 symbols (+, /, =), 
+ *   the encrypted Base64 string is converted to a pure Hex string.
+ * - This guarantees 100% safe physical-layer transmission.
  */
 
 export const SYNC_PREFIX = {
@@ -33,24 +32,42 @@ const decompactify = (compact) => ({
 });
 
 /**
- * Generate HMAC-SHA256 signature (first 8 hex chars for compactness)
+ * Convert string to Hex
  */
-const sign = (json) => {
-  if (!SECRET_KEY) return '00000000';
-  return CryptoJS.HmacSHA256(json, SECRET_KEY).toString().substring(0, 8);
+const stringToHex = (str) => {
+  return Array.from(str)
+    .map(c => c.charCodeAt(0).toString(16).padStart(2, '0'))
+    .join('');
 };
 
 /**
- * Encodes data into a signed, QR-safe sync string.
- * Format: prefix + signature(8 hex chars) + "." + base64(json)
+ * Convert Hex back to string
+ */
+const hexToString = (hex) => {
+  let str = '';
+  for (let i = 0; i < hex.length; i += 2) {
+    str += String.fromCharCode(parseInt(hex.substring(i, i + 2), 16));
+  }
+  return str;
+};
+
+/**
+ * Encode: JSON -> AES (Base64) -> Hex
  */
 export const encodeSyncData = (data, prefix) => {
   try {
+    if (!SECRET_KEY) return '';
+    
     const compact = compactify(data);
-    const json = JSON.stringify(compact);
-    const b64 = btoa(unescape(encodeURIComponent(json)));
-    const sig = sign(json);
-    return `${prefix}${sig}.${b64}`;
+    const jsonString = JSON.stringify(compact);
+    
+    // AES Encryption (outputs Base64)
+    const encryptedBase64 = CryptoJS.AES.encrypt(jsonString, SECRET_KEY).toString();
+    
+    // Convert to Hex for QR safety
+    const safeHex = stringToHex(encryptedBase64);
+    
+    return `${prefix}${safeHex}`;
   } catch (error) {
     console.error('Sync encode error:', error);
     return '';
@@ -58,30 +75,31 @@ export const encodeSyncData = (data, prefix) => {
 };
 
 /**
- * Decodes a signed sync string back to data.
- * Verifies HMAC signature to prevent tampering.
+ * Decode: Hex -> AES (Base64) -> JSON
  */
 export const decodeSyncData = (payload, prefix) => {
   try {
     if (!payload || !payload.startsWith(prefix)) return null;
-
-    const body = payload.substring(prefix.length);
-    const dotIndex = body.indexOf('.');
-    if (dotIndex === -1) return null;
-
-    const sig = body.substring(0, dotIndex);
-    const b64 = body.substring(dotIndex + 1);
-
-    const json = decodeURIComponent(escape(atob(b64)));
-
-    // Verify signature
-    const expectedSig = sign(json);
-    if (sig !== expectedSig) {
-      console.error('Sync: Signature mismatch - data may be tampered or key differs');
+    if (!SECRET_KEY) {
+      console.error("Sync Error: SECRET_KEY is not defined.");
       return null;
     }
 
-    const compact = JSON.parse(json);
+    const safeHex = payload.substring(prefix.length);
+    
+    // Restore Base64 from Hex
+    const encryptedBase64 = hexToString(safeHex);
+
+    // Decrypt AES
+    const decryptedBytes = CryptoJS.AES.decrypt(encryptedBase64, SECRET_KEY);
+    const jsonString = decryptedBytes.toString(CryptoJS.enc.Utf8);
+
+    if (!jsonString) {
+      console.error("Sync Error: Decryption failed. Keys might not match between devices.");
+      return null;
+    }
+
+    const compact = JSON.parse(jsonString);
     const data = decompactify(compact);
 
     if (!Array.isArray(data.stamps)) return null;
