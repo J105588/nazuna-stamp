@@ -3,9 +3,9 @@ export const MAX_DISTANCE_METERS = 30;
 // Define specific stamp spots with coordinates.
 // In reality, this would be fetched from a DB or config based on the QR code data.
 export const STAMP_SPOTS = {
-  "spot-1": { name: "チェックポイント1", lat: 35.67743995088805, lon: 139.8389425545853 },
-  "spot-2": { name: "チェックポイント2", lat: 35.5, lon: 139.8487971932028 },
-  "spot-3": { name: "チェックポイント3", lat: 35.66602359267873, lon: 139.8587627389317 },
+  "nz-7a9b-2c": { name: "チェックポイント1", lat: 35.67743995088805, lon: 139.8389425545853 },
+  "nz-3d5f-4e": { name: "チェックポイント2", lat: 35.5, lon: 139.8487971932028 },
+  "nz-9k2m-8z": { name: "チェックポイント3", lat: 35.66602359267873, lon: 139.8587627389317 },
 };
 
 function toRad(value) {

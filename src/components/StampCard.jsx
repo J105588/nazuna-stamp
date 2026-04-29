@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Camera, Check, ChevronDown } from 'lucide-react';
+import { STAMP_SPOTS } from '../utils/geoUtils';
 
 const StampCard = ({ stamps, totalStamps, isExchanged, onOpenCamera, scannerClosedAt, onBackdoorAction }) => {
   const isComplete = stamps.length >= totalStamps;
@@ -41,16 +42,17 @@ const StampCard = ({ stamps, totalStamps, isExchanged, onOpenCamera, scannerClos
 
       <div className="card-outer">
         <div className="card-grid">
-          {slots.map((slot) => {
-            const isStamped = stamps.includes(`spot-${slot}`);
+          {Object.keys(STAMP_SPOTS).map((spotId, index) => {
+            const isStamped = stamps.includes(spotId);
+            const slotNumber = index + 1;
             return (
               <div 
-                key={slot} 
+                key={spotId} 
                 className={`stamp-slot ${isStamped ? 'stamped' : ''}`}
-                onClick={() => handleSlotClick(slot)}
+                onClick={() => handleSlotClick(slotNumber)}
               >
                 <div className="slot-inner">
-                  <div className="slot-number">{slot}</div>
+                  <div className="slot-number">{slotNumber}</div>
                   {isStamped && (
                     <div className="stamp-mark">
                       <Check size={32} className="check-icon" />

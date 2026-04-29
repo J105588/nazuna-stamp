@@ -38,11 +38,15 @@ export const SYNC_PREFIX = {
  * Generate a deterministic checksum from a string.
  * This catches accidental data corruption without requiring a shared secret.
  * Not cryptographic, but sufficient for integrity verification of QR transfers.
+ * A static salt is added to prevent trivial manual QR generation.
  */
+const SYNC_SALT = import.meta.env.VITE_SYNC_SALT || 'default-fallback-salt';
+
 const checksum = (str) => {
+  let saltedStr = str + SYNC_SALT;
   let hash = 0x811c9dc5; // FNV offset basis
-  for (let i = 0; i < str.length; i++) {
-    hash ^= str.charCodeAt(i);
+  for (let i = 0; i < saltedStr.length; i++) {
+    hash ^= saltedStr.charCodeAt(i);
     hash = Math.imul(hash, 0x01000193); // FNV prime
   }
   return (hash >>> 0).toString(16).padStart(8, '0');

@@ -128,7 +128,7 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser, isStaffMode =
             </div>
 
             <div className="stamp-toggle-grid">
-              {Object.entries(STAMP_SPOTS).map(([id, spot]) => {
+              {Object.entries(STAMP_SPOTS).map(([id, spot], index) => {
                 const isActive = scannedData.stamps.includes(id);
                 return (
                   <button 
@@ -136,7 +136,7 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser, isStaffMode =
                     className={`stamp-toggle-item ${isActive ? 'active' : ''}`}
                     onClick={() => toggleStamp(id)}
                   >
-                    <div className="toggle-number">{id}</div>
+                    <div className="toggle-number">{index + 1}</div>
                     <div className="toggle-name">{spot.name}</div>
                     {isActive && <CheckCircle2 className="toggle-check" size={16} />}
                   </button>
