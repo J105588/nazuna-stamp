@@ -1391,12 +1391,42 @@ body {
 }
 
 .staff-header {
-  padding: 20px 24px;
+  padding: 16px 24px;
   background: #1c1c1e;
   color: white;
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.staff-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-camera-toggle {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: rgba(255,255,255,0.8);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-camera-toggle:active {
+  transform: scale(0.9);
+}
+
+.btn-camera-toggle.active {
+  background: var(--primary-color);
+  color: white;
+  box-shadow: 0 0 20px rgba(155, 45, 48, 0.4);
 }
 
 .staff-title {
@@ -1406,15 +1436,32 @@ body {
 }
 
 .staff-title h2 {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 800;
   margin: 0;
 }
 
+.btn-exit-staff {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .staff-close {
-  background: none;
+  background: rgba(255,255,255,0.1);
   border: none;
   color: rgba(255,255,255,0.6);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
 }
 

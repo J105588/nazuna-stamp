@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, RefreshCcw, CheckCircle2, ChevronRight, Save, ScanLine, Trash2 } from 'lucide-react';
+import { X, RefreshCcw, CheckCircle2, ChevronRight, Save, ScanLine, Trash2, Camera } from 'lucide-react';
 import { STAMP_SPOTS } from '../utils/geoUtils';
 import { encodeSyncData, SYNC_PREFIX } from '../utils/syncUtils';
 
-const StaffDashboard = ({ initialScannedData, onClose, onScanUser, isStaffMode = false, onExitStaffMode }) => {
+const StaffDashboard = ({ 
+  initialScannedData, 
+  onClose, 
+  onScanUser, 
+  isStaffMode = false, 
+  onExitStaffMode,
+  isScanning = false 
+}) => {
   const [scannedData, setScannedData] = useState(initialScannedData);
   const [isShowingApplyQR, setIsShowingApplyQR] = useState(false);
   const [applyQRData, setApplyQRData] = useState('');
@@ -72,11 +79,22 @@ const StaffDashboard = ({ initialScannedData, onClose, onScanUser, isStaffMode =
             <ScanLine size={20} />
             <h2>管理者パネル {isStaffMode && <span className="mode-badge">STAFF MODE</span>}</h2>
           </div>
-          {isStaffMode ? (
-            <button className="btn-exit-staff" onClick={onExitStaffMode}>モード終了</button>
-          ) : (
-            <button className="staff-close" onClick={onClose}><X size={24} /></button>
-          )}
+          
+          <div className="staff-header-actions">
+            <button 
+              className={`btn-camera-toggle ${isScanning ? 'active' : ''}`}
+              onClick={onScanUser}
+              title={isScanning ? "カメラをオフにする" : "カメラをオンにする"}
+            >
+              <Camera size={20} />
+            </button>
+            
+            {isStaffMode ? (
+              <button className="btn-exit-staff" onClick={onExitStaffMode}>モード終了</button>
+            ) : (
+              <button className="staff-close" onClick={onClose}><X size={24} /></button>
+            )}
+          </div>
         </header>
 
         {!scannedData ? (

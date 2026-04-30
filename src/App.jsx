@@ -203,26 +203,26 @@ function App() {
   if (isStaffMode) {
     return (
       <div className="app-container">
-        {isScanning ? (
+        <StaffDashboard
+          initialScannedData={scannedUserData}
+          onClose={() => {
+            setScannedUserData(null);
+          }}
+          onScanUser={() => {
+            setIsScanning(!isScanning);
+          }}
+          isScanning={isScanning}
+          isStaffMode={true}
+          onExitStaffMode={() => {
+            setIsStaffMode(false);
+            saveState(stamps, isExchanged, isDismissed, false);
+          }}
+        />
+        {isScanning && (
           <QRScanner
             onScanSuccess={handleScanSuccess}
             onCancel={handleCancelScan}
             isStaffDashboardOpen={true}
-          />
-        ) : (
-          <StaffDashboard
-            initialScannedData={scannedUserData}
-            onClose={() => {
-              setScannedUserData(null);
-            }}
-            onScanUser={() => {
-              setIsScanning(true);
-            }}
-            isStaffMode={true}
-            onExitStaffMode={() => {
-              setIsStaffMode(false);
-              saveState(stamps, isExchanged, isDismissed, false);
-            }}
           />
         )}
       </div>
@@ -316,8 +316,9 @@ function App() {
             setScannedUserData(null);
           }}
           onScanUser={() => {
-            setIsScanning(true);
+            setIsScanning(!isScanning);
           }}
+          isScanning={isScanning}
         />
       )}
 
