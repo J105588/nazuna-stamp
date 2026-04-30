@@ -6,7 +6,7 @@ import { AlertTriangle } from 'lucide-react'
 // Appを遅延読み込み（停止時はダウンロードされないようにする）
 const App = lazy(() => import('./App.jsx'));
 
-const IS_APP_STOPPED = import.meta.env.VITE_APP_STOPPED === 'true';
+const IS_APP_STOPPED = import.meta.env.VITE_APP_STOPPED !== 'false';
 
 const StoppedScreen = () => (
   <div className="app-stopped-container">
