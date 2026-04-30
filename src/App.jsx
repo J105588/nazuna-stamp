@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import CryptoJS from 'crypto-js';
 import EntryGuard from './components/EntryGuard';
 import StampCard from './components/StampCard';
 import QRScanner from './components/QRScanner';
@@ -13,7 +12,7 @@ import UserSyncModal from './components/UserSyncModal';
 import { decodeSyncData, SYNC_PREFIX } from './utils/syncUtils';
 
 const TOTAL_STAMPS = Object.keys(STAMP_SPOTS).length;
-const DEBUG_PASSCODE_HASH = import.meta.env.VITE_DEBUG_PASSCODE_HASH;
+const DEBUG_PASSCODE = import.meta.env.VITE_DEBUG_PASSCODE;
 
 import TermsModal from './components/TermsModal';
 
@@ -173,8 +172,7 @@ function App() {
 
   const handlePasscodeSubmit = (e) => {
     e.preventDefault();
-    const hashedInput = CryptoJS.SHA256(passcodeInput).toString();
-    if (hashedInput === DEBUG_PASSCODE_HASH) {
+    if (passcodeInput === DEBUG_PASSCODE) {
       setIsStaffMode(true);
       saveState(stamps, isExchanged, isDismissed, true);
       setShowPasscode(false);
