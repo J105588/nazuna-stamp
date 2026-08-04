@@ -197,25 +197,34 @@ const StampCard = ({
       </div>
 
       {isComplete ? (
-        <div className="complete-msg-container">
-          <div className="complete-msg">
-            <Sparkles size={20} className="sparkle-icon" /> コンプリート！
+        <div className="complete-banner-card">
+          <div className="complete-header-row">
+            <Award size={36} className="complete-award-icon" />
+            <div>
+              <h3>エリアコンプリート達成！</h3>
+              <p>「{currentSection?.name || 'スタンプラリー'}」の全スタンプを集めました！</p>
+            </div>
           </div>
-          <p className="complete-sub-text">1つのエリアのスタンプをコンプリートしました！</p>
-          {!isExchanged && (
-            <div className="scroll-hint">
-              <p>引き換えは下へ</p>
+          {!isExchanged ? (
+            <div className="complete-reward-notice">
+              <Sparkles size={18} />
+              <span>下部の「特典引き換え」セクションから景品をお受け取りください。</span>
               <ChevronDown size={24} className="bounce-arrow" />
+            </div>
+          ) : (
+            <div className="complete-reward-notice exchanged">
+              <CheckCircle2 size={18} />
+              <span>特典の引き換えが完了しています。ご参加ありがとうございました！</span>
             </div>
           )}
         </div>
       ) : (
         <p className="instruction-text">
-          いずれかのエリアのスタンプを集めてコンプリートを目指そう！<br />スポットに着いたら「スキャンする」ボタンを押してね。
+          エリアのスタンプを集めてコンプリートを目指そう！<br />スポットに着いたら「スキャンする」ボタンを押してください。
         </p>
       )}
 
-      {!isExchanged && (
+      {!isExchanged && !isComplete && (
         <div className="camera-button-action-area">
           <button className="scan-btn-large" onClick={onOpenCamera}>
             <div className="scan-btn-icon">

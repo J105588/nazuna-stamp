@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Smartphone, MapPin, HardDrive, Gift, ShieldAlert, FileText } from 'lucide-react';
 
 const TermsModal = ({ onClose, forceScroll = true }) => {
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(!forceScroll);
@@ -32,46 +32,60 @@ const TermsModal = ({ onClose, forceScroll = true }) => {
 
   return (
     <div className="modal-overlay" onClick={() => onClose(false)}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
+      <div className="modal-content terms-modal-content" onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={() => onClose(false)}>
           <X size={24} />
         </button>
-        <h3>利用規約</h3>
+        <div className="terms-header">
+          <FileText size={22} className="terms-header-icon" />
+          <h3>なずな祭スタンプラリー 利用規約</h3>
+        </div>
+
         <div className="terms-scroll-area" onScroll={handleScroll}>
-          <p>本スタンプラリー（以下「本イベント」）に参加される前に、以下の規約を必ずご確認ください。本アプリで「同意して開始」を選択した時点で、本規約に同意したものとみなします。</p>
+          <p className="terms-intro">
+            本スタンプラリー（以下「本イベント」）に参加される前に、以下の規約を必ずご確認ください。本アプリで「同意して開始」を選択した時点で、本規約に同意したものとみなします。
+          </p>
 
-          <h4>1. 推奨環境について</h4>
-          <p>本アプリはブラウザの機能（GPS・ローカルストレージ）を利用します。以下の環境以外では正常に動作しない場合があります。<br /><br />
-            iOS: Safari（最新版）<br />
-            Android: Google Chrome（最新版）<br /><br />
-            注意: アプリ内ブラウザ、シークレットモード（プライベートブラウズ）では正しく利用できません。</p>
+          <div className="terms-card-item">
+            <h4><Smartphone size={18} /> 1. 推奨環境について</h4>
+            <p>本アプリはブラウザの機能（GPS・ローカルストレージ）を利用します。以下の推奨環境以外では正常に動作しない場合があります。</p>
+            <div className="env-list">
+              <span className="env-tag">iOS: Safari（最新版）</span>
+              <span className="env-tag">Android: Google Chrome（最新版）</span>
+            </div>
+            <p className="terms-note">※ LINE・Instagram等のアプリ内ブラウザやシークレットモード（プライベートブラウズ）では正しく利用できません。</p>
+          </div>
 
-          <h4>2. 位置情報（GPS）の利用</h4>
-          <p>スタンプ取得には、端末の位置情報サービスを「オン」にし、ブラウザによる位置情報の取得を許可する必要があります。<br /><br />
-            GPSの精度は端末や周囲の建物環境に依存します。近づいても反応しない場合は、場所を少し移動して再試行してください。</p>
+          <div className="terms-card-item">
+            <h4><MapPin size={18} /> 2. 位置情報（GPS）の利用</h4>
+            <p>スタンプ取得には、端末の位置情報サービスを「オン」にし、ブラウザによる位置情報の取得を許可する必要があります。</p>
+            <p className="terms-note">※ GPSの精度は端末や周囲の建物環境に依存します。近づいても反応しない場合は場所を移動して再試行してください。</p>
+          </div>
 
-          <h4>3. データの保存について</h4>
-          <p>取得したスタンプ情報は、お使いの端末内に保存されます。サーバーには保存されません。<br /><br />
-            以下の操作を行うと、取得したスタンプがすべて消去され、復元はできませんのでご注意ください。<br />
-            ・ブラウザの「履歴」や「キャッシュ」の削除<br />
-            ・スマートフォンのストレージ最適化（クリーナーアプリ等の実行）<br />
-            ・スタンプ取得時とは別のブラウザでのアクセス</p>
+          <div className="terms-card-item">
+            <h4><HardDrive size={18} /> 3. データの保存について</h4>
+            <p>取得したスタンプ情報は、お使いの端末内に保存されます（サーバーには自動保存されません）。</p>
+            <p className="terms-warning-text">
+              以下の操作を行うと取得したスタンプが消去され、復元できなくなりますのでご注意ください。<br />
+              ・ブラウザの履歴・キャッシュの削除<br />
+              ・ストレージ最適化アプリの実行<br />
+              ・別ブラウザでのアクセス
+            </p>
+          </div>
 
-          <h4>4. 特典の引き換え（お一人様1回まで）</h4>
-          <p>本スタンプラリーには複数のエリア（コース）が存在しますが、特典の引き換えはお一人様につき1回（いずれか1エリアでのコンプリート時のみ）に限ります。1つのエリアでコンプリート特典を引き換えた後は、別のエリアで2回目の引き換えを行うことはできません。<br /><br />
-            スタンプをすべてコンプリートした際に出現する「引き換え画面」は、必ずスタッフの指示に従って操作してください。<br /><br />
-            スタッフの確認前に誤って「使用済み」にした場合、再発行はできません。<br />
-            一度「使用済み」となった特典は再利用できません。<br />
-            画面のスクリーンショットによる引き換えは無効です。<br />
-            特典の配布は数に限りがあるため、全ての参加者への配布を保証するものではありません。</p>
+          <div className="terms-card-item">
+            <h4><Gift size={18} /> 4. 特典の引き換え（お一人様1回まで）</h4>
+            <p>特典の引き換えはお一人様につき1回（いずれか1エリアのコンプリート時のみ）に限ります。1つのエリアで引き換えた後、別エリアで2回目の引き換えを行うことはできません。</p>
+            <p className="terms-note">
+              ※ 引き換え画面は必ずスタッフの指示に従って操作してください。誤って使用済みにした場合の再発行・スクリーショットでの引き換えは無効です。
+            </p>
+          </div>
 
-          <h4>5. 免責事項・注意事項</h4>
-          <p>本アプリの使用中に発生した事故、怪我、端末の故障、紛失、またはデータの消失について、主催者は一切の責任を負いません。<br /><br />
-            本アプリの利用に伴う通信料は、参加者の負担となります。<br /><br />
-            歩きスマホは大変危険です。画面の操作は必ず安全な場所に立ち止まって行ってください。<br /><br />
-            位置情報の偽装（モックアプリの使用等）や、本システムの解析・改ざん、その他運営が不適切と判断した行為が発覚した場合、取得したスタンプや特典への権利を無効とします。<br /><br />
-            運営側は、参加者の承諾を得ることなく、本規約の内容を変更することができるものとします。変更後の規約は、本アプリ上に掲示した時点で効力を生じるものとします。<br /><br />
-            本サービスは予告なく中断・終了する場合があります。</p>
+          <div className="terms-card-item">
+            <h4><ShieldAlert size={18} /> 5. 免責事項・注意事項</h4>
+            <p>歩きスマホは大変危険です。画面操作は必ず安全な場所に立ち止まって行ってください。</p>
+            <p>位置情報の偽装やシステムの解析・改ざん等の不適切行為が発覚した場合、権利を無効とします。また、本アプリ利用中に発生した事故・損害について主催者は一切の責任を負いません。</p>
+          </div>
 
           <p className="copyright">©2026 なずな祭実行委員会</p>
         </div>
