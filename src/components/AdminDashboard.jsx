@@ -20,12 +20,17 @@ import {
   Navigation,
   Download,
   FolderDown,
-  FolderArchive
+  FolderArchive,
+  ShieldCheck,
+  SlidersHorizontal,
+  CheckCircle2,
+  AlertTriangle
 } from 'lucide-react';
 import { stampDb, generateUUID } from '../utils/stampDb';
 import { isSupabaseConfigured } from '../lib/supabase';
 
 const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
+  const [activeTab, setActiveTab] = useState('spots'); // 'spots' | 'settings'
   const [sections, setSections] = useState([]);
   const [checkpoints, setCheckpoints] = useState([]);
   const [settings, setSettings] = useState({
@@ -537,130 +542,126 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
   };
 
   return (
-    <div className={isFullView ? "admin-full-view" : "admin-modal-overlay"}>
+    <div className={isFullView ? "admin-full-page" : "admin-modal-overlay"}>
       <div className="admin-dashboard-container">
-        <header className="admin-header">
-          <div className="admin-title">
-            <Layers size={22} className="admin-icon" />
-            <h2>
-              システム管理者パネル
-              <span className="admin-badge">
-                {isSupabaseConfigured ? 'REMOTE DB SYNCED' : 'LOCAL CACHE'}
-              </span>
-            </h2>
+        <header className="admin-header-compact">
+          <div className="admin-title-compact">
+            <Layers size={18} className="admin-icon" />
+            <span>管理パネル</span>
+            <span className="admin-badge-compact">
+              {isSupabaseConfigured ? 'REMOTE SYNC' : 'LOCAL'}
+            </span>
           </div>
-          <div className="admin-header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button className="btn-icon" onClick={loadData} title="最新データを再読み込み">
-              <RefreshCw size={18} className={isLoading ? "spin-icon" : ""} />
+          <div className="admin-header-actions">
+            <button className="btn-icon-compact" onClick={loadData} title="最新データを再読み込み">
+              <RefreshCw size={15} className={isLoading ? "spin-icon" : ""} />
             </button>
-            <button className="admin-close-btn" onClick={onClose}>
-              <X size={24} />
+            <button className="admin-close-btn-compact" onClick={onClose} title="管理画面を閉じる">
+              <X size={18} />
+              <span>閉じる</span>
             </button>
           </div>
         </header>
 
         <div className="admin-body">
-          {/* SYSTEM SETTINGS CARD */}
-          <div className="db-card system-settings-card">
-            <div className="card-header-row">
-              <h4><Settings size={18} /> システム基本設定 (DB管理)</h4>
-              {settingsSavedMessage && (
-                <span className="saved-badge"><Check size={14} /> 保存しました</span>
-              )}
+          {/* DASHBOARD STATS SUMMARY BAR */}
+          <div className="admin-summary-bar">
+            <div className="summary-card">
+              <div className="summary-icon sec-icon">
+                <Building2 size={22} />
+              </div>
+              <div className="summary-info">
+                <span className="summary-label">エリアセクション</span>
+                <span className="summary-value">{sections.length} <small>エリア</small></span>
+              </div>
             </div>
 
-            <form onSubmit={handleSaveSettings} className="settings-form">
-              <div className="setting-row power-toggle-row">
-                <div className="setting-info">
-                  <span className="setting-label"><Power size={16} /> サービス稼働ステータス</span>
-                  <span className="setting-subtext">「停止中」に切り替えると、一般ユーザーの画面でサービス停止案内が表示されます</span>
-                </div>
-                <button
-                  type="button"
-                  className={`btn-toggle-switch ${isAppStopped ? 'stopped' : 'running'}`}
-                  onClick={() => setIsAppStopped(!isAppStopped)}
-                >
-                  <Power size={16} />
-                  <span>{isAppStopped ? 'サービス停止中 (STOPPED)' : '正常稼働中 (RUNNING)'}</span>
-                </button>
+            <div className="summary-card">
+              <div className="summary-icon cp-icon">
+                <MapPin size={22} />
               </div>
-
-              <div className="setting-passcodes-grid">
-                <div className="setting-item">
-                  <label><KeyRound size={14} /> 現場スタッフ用パスコード</label>
-                  <input
-                    type="password"
-                    value={staffPasscode}
-                    onChange={(e) => setStaffPasscode(e.target.value)}
-                    maxLength={15}
-                    placeholder="パスコードを設定してください"
-                  />
-                </div>
-                <div className="setting-item">
-                  <label><KeyRound size={14} /> システム管理者用パスコード</label>
-                  <input
-                    type="password"
-                    value={adminPasscode}
-                    onChange={(e) => setAdminPasscode(e.target.value)}
-                    maxLength={15}
-                    placeholder="パスコードを設定してください"
-                  />
-                </div>
+              <div className="summary-info">
+                <span className="summary-label">全チェックポイント</span>
+                <span className="summary-value">{checkpoints.length} <small>箇所</small></span>
               </div>
-
-              <div className="settings-form-actions">
-                <button type="submit" className="btn-primary btn-save-settings" disabled={isLoading}>
-                  <Save size={16} /> 基本設定を保存
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <div className="db-mgmt-header" style={{ marginTop: '20px' }}>
-            <div>
-              <h3>駅別セクション & チェックポイントDB管理</h3>
-              <p className="admin-subtitle">チェックポイントの緯度・経度座標を指定・保存します</p>
             </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-              {checkpoints.length > 0 && (
-                <button
-                  type="button"
-                  className="btn-small-primary"
-                  onClick={() => handleBulkZipDownload(checkpoints)}
-                  disabled={isLoading}
-                  title="全セクションの全QRコードを1つのZIPファイルで一括ダウンロード"
-                >
-                  <FolderArchive size={16} /> 全QR一括ZIP保存 ({checkpoints.length}件)
-                </button>
-              )}
-              <button className="btn-text-danger" onClick={handleResetDb}>
-                <RotateCcw size={16} /> データを全消去
+
+            <div className="summary-card">
+              <div className={`summary-icon status-icon ${isAppStopped ? 'stopped' : 'running'}`}>
+                <Power size={22} />
+              </div>
+              <div className="summary-info">
+                <span className="summary-label">サービス稼働状況</span>
+                <span className={`summary-value status-text ${isAppStopped ? 'stopped' : 'running'}`}>
+                  {isAppStopped ? '停止中 (STOPPED)' : '正常稼働中'}
+                </span>
+              </div>
+            </div>
+
+            {checkpoints.length > 0 && (
+              <button
+                type="button"
+                className="summary-card action-card-btn"
+                onClick={() => handleBulkZipDownload(checkpoints)}
+                disabled={isLoading}
+                title="登録されている全QRコードをZIPアーカイブで保存"
+              >
+                <div className="summary-icon zip-icon">
+                  <FolderArchive size={22} />
+                </div>
+                <div className="summary-info">
+                  <span className="summary-label">全QR一括保存</span>
+                  <span className="summary-value-action">ZIPダウンロード ➔</span>
+                </div>
               </button>
-            </div>
+            )}
           </div>
 
-          {/* Add Section Card */}
-          <div className="db-card add-section-card">
-            <h4><Building2 size={18} /> 新規駅セクションの追加</h4>
-            <form onSubmit={handleAddSection} className="db-form">
-              <div className="add-section-form-group">
-                <input
-                  type="text"
-                  placeholder="駅・エリア名称 (例: 市川真間駅エリア)"
-                  value={newSectionName}
-                  onChange={(e) => setNewSectionName(e.target.value)}
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="エリアの説明・補足 (任意)"
-                  value={newSectionDesc}
-                  onChange={(e) => setNewSectionDesc(e.target.value)}
-                />
-                <button type="submit" className="btn-primary" disabled={isLoading}><Plus size={16} /> セクション追加</button>
-              </div>
-            </form>
+          {/* TAB NAVIGATION HEADER */}
+          <div className="admin-tabs-nav">
+            <button
+              type="button"
+              className={`tab-btn ${activeTab === 'spots' ? 'active' : ''}`}
+              onClick={() => setActiveTab('spots')}
+            >
+              <Building2 size={18} />
+              <span>エリア・スポット管理 ({checkpoints.length})</span>
+            </button>
+            <button
+              type="button"
+              className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+              onClick={() => setActiveTab('settings')}
+            >
+              <Settings size={18} />
+              <span>システム設定・パスコード</span>
+            </button>
           </div>
+
+          {/* TAB 1: SPOTS & SECTIONS MANAGEMENT */}
+          {activeTab === 'spots' && (
+            <div className="tab-content-pane">
+              {/* Add Section Card */}
+              <div className="db-card add-section-card">
+                <h4><Building2 size={18} /> 新規駅セクション（エリア）の追加</h4>
+                <form onSubmit={handleAddSection} className="db-form">
+                  <div className="add-section-form-group">
+                    <input
+                      type="text"
+                      placeholder="駅・エリア名称 (例: 市川真間駅エリア)"
+                      value={newSectionName}
+                      onChange={(e) => setNewSectionName(e.target.value)}
+                      required
+                    />
+                    <input
+                      type="text"
+                      placeholder="エリアの説明・補足 (任意)"
+                      value={newSectionDesc}
+                      onChange={(e) => setNewSectionDesc(e.target.value)}
+                    />
+                    <button type="submit" className="btn-primary" disabled={isLoading}><Plus size={16} /> セクション追加</button>
+                  </div>
+                </form>
+              </div>
 
           {/* Section & Checkpoint List */}
           {sections.length === 0 ? (
@@ -958,6 +959,85 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
                   </div>
                 );
               })}
+            </div>
+          )}
+            </div>
+          )}
+
+          {/* TAB 2: SYSTEM SETTINGS & SECURITY */}
+          {activeTab === 'settings' && (
+            <div className="tab-content-pane">
+              {/* SYSTEM SETTINGS CARD */}
+              <div className="db-card system-settings-card">
+                <div className="card-header-row">
+                  <h4><Settings size={18} /> システム基本設定 (パスコード & 稼働制御)</h4>
+                  {settingsSavedMessage && (
+                    <span className="saved-badge"><Check size={14} /> 保存しました</span>
+                  )}
+                </div>
+
+                <form onSubmit={handleSaveSettings} className="settings-form">
+                  <div className="setting-row power-toggle-row">
+                    <div className="setting-info">
+                      <span className="setting-label"><Power size={16} /> サービス稼働ステータス</span>
+                      <span className="setting-subtext">「停止中」に切り替えると、一般ユーザーの画面でサービス停止案内が表示されます</span>
+                    </div>
+                    <button
+                      type="button"
+                      className={`btn-toggle-switch ${isAppStopped ? 'stopped' : 'running'}`}
+                      onClick={() => setIsAppStopped(!isAppStopped)}
+                    >
+                      <Power size={16} />
+                      <span>{isAppStopped ? 'サービス停止中 (STOPPED)' : '正常稼働中 (RUNNING)'}</span>
+                    </button>
+                  </div>
+
+                  <div className="setting-passcodes-grid">
+                    <div className="setting-item">
+                      <label><KeyRound size={14} /> 現場スタッフ用パスコード</label>
+                      <input
+                        type="password"
+                        value={staffPasscode}
+                        onChange={(e) => setStaffPasscode(e.target.value)}
+                        maxLength={15}
+                        placeholder="パスコードを設定してください"
+                      />
+                    </div>
+                    <div className="setting-item">
+                      <label><KeyRound size={14} /> システム管理者用パスコード</label>
+                      <input
+                        type="password"
+                        value={adminPasscode}
+                        onChange={(e) => setAdminPasscode(e.target.value)}
+                        maxLength={15}
+                        placeholder="パスコードを設定してください"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="settings-form-actions">
+                    <button type="submit" className="btn-primary btn-save-settings" disabled={isLoading}>
+                      <Save size={16} /> 基本設定を保存
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* DANGER ZONE RESET CARD */}
+              <div className="db-card danger-zone-card">
+                <div className="danger-header">
+                  <AlertTriangle size={20} className="danger-icon" />
+                  <h4>データベース危険操作ゾーン</h4>
+                </div>
+                <p className="danger-desc">
+                  すべての登録駅セクション、チェックポイント（座標）、およびパスコード設定を削除し、初期状態にリセットします。この操作は取り消せません。
+                </p>
+                <div className="danger-actions">
+                  <button type="button" className="btn-text-danger" onClick={handleResetDb}>
+                    <RotateCcw size={16} /> 全データを初期化・全消去する
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

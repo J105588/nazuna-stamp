@@ -75,7 +75,7 @@ const StaffDashboard = ({
   };
 
   return (
-    <div className={isStaffMode ? "staff-full-view" : "staff-modal-overlay"}>
+    <div className={isStaffMode ? "staff-full-page" : "staff-modal-overlay"}>
       <div className="staff-dashboard">
         <header className="staff-header">
           <div className="staff-title">

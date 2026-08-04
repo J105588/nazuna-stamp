@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Building2, CheckCircle2, ChevronRight, MapPin, X } from 'lucide-react';
 
 function AreaSelectModal({ sections = [], checkpoints = [], stamps = [], activeSectionId, onSelectSection, onClose, isCancelable = true }) {
+  useEffect(() => {
+    document.body.classList.add('modal-open');
+    document.documentElement.classList.add('modal-open');
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.classList.remove('modal-open');
+      document.documentElement.classList.remove('modal-open');
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
   return (
     <div className="modal-overlay" onClick={isCancelable ? onClose : undefined}>
       <div className="modal-content area-select-modal-content" onClick={e => e.stopPropagation()}>
