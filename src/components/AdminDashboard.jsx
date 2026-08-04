@@ -643,7 +643,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
           <div className="db-card add-section-card">
             <h4><Building2 size={18} /> 新規駅セクションの追加</h4>
             <form onSubmit={handleAddSection} className="db-form">
-              <div className="form-group">
+              <div className="add-section-form-group">
                 <input
                   type="text"
                   placeholder="駅・エリア名称 (例: 市川真間駅エリア)"
