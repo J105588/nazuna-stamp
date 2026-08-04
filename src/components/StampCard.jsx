@@ -1,18 +1,52 @@
 import React, { useState } from 'react';
-import { Camera, Check, ChevronDown } from 'lucide-react';
-import { STAMP_SPOTS } from '../utils/geoUtils';
+import { Camera, Check, ChevronDown, Building2, Sparkles, CheckCircle2, Layers, Star, Heart, Award, Flame, ThumbsUp, CheckCircle } from 'lucide-react';
 
-const StampCard = ({ stamps, totalStamps, isExchanged, onOpenCamera, scannerClosedAt, onBackdoorAction }) => {
-  const isComplete = stamps.length >= totalStamps;
-  const slots = Array.from({ length: totalStamps }, (_, i) => i + 1);
+const StampCard = ({
+  stamps,
+  sections = [],
+  checkpoints = [],
+  activeSectionId,
+  onSectionChange,
+  isComplete,
+  isExchanged,
+  onOpenCamera,
+  scannerClosedAt,
+  onBackdoorAction
+}) => {
   const [tapCount, setTapCount] = useState(0);
+  const [headerTapCount, setHeaderTapCount] = useState(0);
 
-  const handleSlotClick = (slot) => {
-    // スキャナーを閉じてから10秒以内か判定
+  // Selected section's checkpoints
+  const currentSection = sections.find(s => s.id === activeSectionId) || sections[0];
+  const sectionCheckpoints = checkpoints.filter(cp => cp.sectionId === (currentSection?.id || ''));
+
+  const sortedCheckpoints = [...sectionCheckpoints].sort((a, b) => (a.order || 0) - (b.order || 0));
+  const totalSlotsCount = sectionCheckpoints.length;
+
+  const slotsList = Array.from({ length: totalSlotsCount }, (_, i) => {
+    const slotNumber = i + 1;
+    const cp = sortedCheckpoints[i];
+    return { slotNumber, cp };
+  });
+
+
+
+  const handleHeaderTap = () => {
+    const newCount = headerTapCount + 1;
+    if (newCount >= 3) {
+      onBackdoorAction();
+      setHeaderTapCount(0);
+    } else {
+      setHeaderTapCount(newCount);
+      setTimeout(() => setHeaderTapCount(0), 3000);
+    }
+  };
+
+  const handleSlotClick = (slotIndex) => {
     const now = Date.now();
     const isRecentlyClosed = (now - scannerClosedAt) < 10000;
 
-    if (slot === 2 && isRecentlyClosed) {
+    if (slotIndex === 1 && isRecentlyClosed) { // 2nd slot
       const newCount = tapCount + 1;
       if (newCount === 3) {
         onBackdoorAction();
@@ -21,55 +55,124 @@ const StampCard = ({ stamps, totalStamps, isExchanged, onOpenCamera, scannerClos
         setTapCount(newCount);
       }
     } else {
-      // 2番以外、または時間切れの場合はリセット
       setTapCount(0);
+    }
+  };
+
+  const getIconComponent = (iconName) => {
+    switch (iconName) {
+      case 'Star': return Star;
+      case 'Heart': return Heart;
+      case 'Award': return Award;
+      case 'Flame': return Flame;
+      case 'ThumbsUp': return ThumbsUp;
+      case 'CheckCircle': return CheckCircle;
+      default: return Check;
     }
   };
 
   return (
     <div className="stamp-card-container" onClick={(e) => {
-      // スロット以外（背景など）をタップした場合もカウントリセット
-      if (e.target.closest('.stamp-slot')) return;
+      if (e.target.closest('.stamp-slot') || e.target.closest('.event-logo-img-small') || e.target.closest('.event-title')) return;
       setTapCount(0);
     }}>
-      <div className="header">
+      <div className="header" onClick={handleHeaderTap}>
         <img src="/app-icon.jpg" alt="なずな祭ロゴ" className="event-logo-img-small" />
         <h1 className="event-title">なずな祭<br />街歩きスタンプラリー</h1>
-        <div className="progress-badge">
-          <span>{stamps.length}</span> / {totalStamps}
-        </div>
       </div>
 
-      <div className="card-outer">
-        <div className="card-grid">
-          {Object.keys(STAMP_SPOTS).map((spotId, index) => {
-            const isStamped = stamps.includes(spotId);
-            const slotNumber = index + 1;
-            return (
-              <div 
-                key={spotId} 
-                className={`stamp-slot ${isStamped ? 'stamped' : ''}`}
-                onClick={() => handleSlotClick(slotNumber)}
-              >
-                <div className="slot-inner">
-                  <div className="slot-number">{slotNumber}</div>
-                  {isStamped && (
-                    <div className="stamp-mark">
-                      <Check size={32} className="check-icon" />
-                    </div>
+      {/* Section Tabs (Station Selection) */}
+      {sections.length > 0 && (
+        <div className="section-tabs-container">
+          <div className="section-tabs-header">
+            <Building2 size={16} />
+            <span>エリア（駅）を選択</span>
+          </div>
+          <div className="section-tabs-grid">
+            {sections.map((sec) => {
+              const secCps = checkpoints.filter(cp => cp.sectionId === sec.id);
+              const secStamped = secCps.filter(cp => stamps.includes(cp.qrId || cp.id)).length;
+              const isSecFull = secCps.length > 0 && secStamped === secCps.length;
+              const isActive = sec.id === (currentSection?.id);
+
+              return (
+                <button
+                  key={sec.id}
+                  className={`section-tab-chip ${isActive ? 'active' : ''} ${isSecFull ? 'sec-complete' : ''}`}
+                  onClick={() => onSectionChange && onSectionChange(sec.id)}
+                >
+                  <span className="tab-name">{sec.name}</span>
+                  {isSecFull ? (
+                    <CheckCircle2 size={14} className="sec-complete-icon" />
+                  ) : (
+                    <span className="tab-badge">{secStamped}/{secCps.length}</span>
                   )}
-                </div>
-              </div>
-            );
-          })}
+                </button>
+              );
+            })}
+          </div>
         </div>
+      )}
+
+      {/* Active Section Stamp Grid */}
+      <div className="card-outer">
+        <div className="section-title-label">
+          <strong>{currentSection?.name || 'スタンプカード'}</strong>
+          {currentSection?.description && <span className="sec-sub-desc">{currentSection.description}</span>}
+        </div>
+
+        {totalSlotsCount === 0 ? (
+          <div className="empty-card-placeholder" onClick={handleHeaderTap}>
+            <Layers size={32} className="empty-icon" />
+            <p>現在登録されているスタンプスポットがありません</p>
+          </div>
+        ) : (
+          <div className="card-grid">
+            {slotsList.map(({ slotNumber, cp }, index) => {
+              const spotId = cp ? (cp.qrId || cp.id) : null;
+              const isStamped = spotId ? stamps.includes(spotId) : false;
+
+              return (
+                <div
+                  key={cp ? cp.id : `empty-slot-${slotNumber}`}
+                  className={`stamp-slot ${isStamped ? 'stamped' : ''}`}
+                  onClick={() => handleSlotClick(index)}
+                >
+                  <div className="slot-inner">
+                    <div className="slot-number">{slotNumber}</div>
+                    {isStamped && cp && (() => {
+                      if (cp.stampIcon && cp.stampIcon.startsWith('data:image')) {
+                        return (
+                          <div className="stamp-mark image-stamp-mark">
+                            <img 
+                              src={cp.stampIcon} 
+                              alt="スタンプ" 
+                              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', imageRendering: '-webkit-optimize-contrast' }} 
+                            />
+                          </div>
+                        );
+                      }
+                      const IconComponent = getIconComponent(cp.stampIcon);
+                      return (
+                        <div className="stamp-mark">
+                          <IconComponent size={32} className="check-icon" />
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {isComplete ? (
         <div className="complete-msg-container">
           <div className="complete-msg">
-            コンプリート！
+            <Sparkles size={20} className="sparkle-icon" /> コンプリート！
           </div>
+          <p className="complete-sub-text">1つのエリアのスタンプをコンプリートしました！</p>
           {!isExchanged && (
             <div className="scroll-hint">
               <p>引き換えは下へ</p>
@@ -79,11 +182,11 @@ const StampCard = ({ stamps, totalStamps, isExchanged, onOpenCamera, scannerClos
         </div>
       ) : (
         <p className="instruction-text">
-          スポットに着いたら「スキャンする」ボタンを押してね！
+          いずれかのエリアのスタンプを集めてコンプリートを目指そう！<br />スポットに着いたら「スキャンする」ボタンを押してね。
         </p>
       )}
 
-      {!isExchanged && !isComplete && (
+      {!isExchanged && (
         <div className="camera-button-wrapper">
           <button className="scan-btn-large" onClick={onOpenCamera}>
             <div className="scan-btn-icon">

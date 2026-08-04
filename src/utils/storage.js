@@ -1,9 +1,9 @@
 import CryptoJS from 'crypto-js';
 
-const SECRET_KEY = import.meta.env.VITE_STORAGE_SECRET;
+const SECRET_KEY = import.meta.env.VITE_STORAGE_SECRET || 'nazuna-stamp-rally-storage-key-2026';
 
-if (!SECRET_KEY) {
-  console.warn('Warning: VITE_STORAGE_SECRET is not defined. Data encryption will be insecure.');
+if (!import.meta.env.VITE_STORAGE_SECRET) {
+  console.info('Info: Using default fallback storage key.');
 }
 
 /**

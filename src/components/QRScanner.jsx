@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { calculateDistance, STAMP_SPOTS, MAX_DISTANCE_METERS } from '../utils/geoUtils';
+import { calculateDistance, MAX_DISTANCE_METERS } from '../utils/geoUtils';
 import { MapPin, XCircle, CheckCircle2, Loader2 } from 'lucide-react';
 
-const QRScanner = ({ onScanSuccess, onCancel, isStaffDashboardOpen }) => {
+const QRScanner = ({ onScanSuccess, onCancel, isStaffDashboardOpen, checkpoints = [] }) => {
   const [status, setStatus] = useState("カメラを起動しています...");
   const [distanceInfo, setDistanceInfo] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -133,7 +133,17 @@ const QRScanner = ({ onScanSuccess, onCancel, isStaffDashboardOpen }) => {
     }
 
     // Normal Stamp Spot Logic
-    const qrId = decodedText;
+    let qrId = decodedText;
+    if (qrId.includes('http://') || qrId.includes('https://') || qrId.includes('?')) {
+      try {
+        const urlObj = new URL(qrId, window.location.origin);
+        const stampParam = urlObj.searchParams.get('stamp') || urlObj.searchParams.get('qr');
+        if (stampParam) qrId = stampParam;
+      } catch {
+        // Fallthrough
+      }
+    }
+
     if (!navigator.geolocation) {
       alert("GPSに対応していません。");
       resetScannerStates();
@@ -143,7 +153,7 @@ const QRScanner = ({ onScanSuccess, onCancel, isStaffDashboardOpen }) => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
-        const target = STAMP_SPOTS[qrId];
+        const target = checkpoints.find(cp => (cp.qrId || cp.id) === qrId || cp.id === qrId);
 
         if (!target) {
           setStatus(`無効なチェックポイントです`);

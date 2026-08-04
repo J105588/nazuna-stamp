@@ -5,7 +5,7 @@ const TermsModal = ({ onClose, forceScroll = true }) => {
   const [hasScrolledToBottom, setHasScrolledToBottom] = useState(!forceScroll);
 
   const handleScroll = (e) => {
-    if (!forceScroll) return;
+    if (!forceScroll || hasScrolledToBottom) return;
     const { scrollTop, scrollHeight, clientHeight } = e.target;
     if (scrollHeight - scrollTop <= clientHeight + 5) {
       setHasScrolledToBottom(true);
@@ -57,8 +57,9 @@ const TermsModal = ({ onClose, forceScroll = true }) => {
             ・スマートフォンのストレージ最適化（クリーナーアプリ等の実行）<br />
             ・スタンプ取得時とは別のブラウザでのアクセス</p>
 
-          <h4>4. 特典の引き換え</h4>
-          <p>スタンプをすべてコンプリートした際に出現する「引き換え画面」は、必ずスタッフの指示に従って操作してください。<br /><br />
+          <h4>4. 特典の引き換え（お一人様1回まで）</h4>
+          <p>本スタンプラリーには複数のエリア（コース）が存在しますが、特典の引き換えはお一人様につき1回（いずれか1エリアでのコンプリート時のみ）に限ります。1つのエリアでコンプリート特典を引き換えた後は、別のエリアで2回目の引き換えを行うことはできません。<br /><br />
+            スタンプをすべてコンプリートした際に出現する「引き換え画面」は、必ずスタッフの指示に従って操作してください。<br /><br />
             スタッフの確認前に誤って「使用済み」にした場合、再発行はできません。<br />
             一度「使用済み」となった特典は再利用できません。<br />
             画面のスクリーンショットによる引き換えは無効です。<br />

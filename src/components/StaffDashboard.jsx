@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { X, RefreshCcw, CheckCircle2, ChevronRight, Save, ScanLine, Trash2, Camera } from 'lucide-react';
-import { STAMP_SPOTS } from '../utils/geoUtils';
+import { 
+  X, 
+  RefreshCcw, 
+  CheckCircle2, 
+  Save, 
+  ScanLine, 
+  Trash2, 
+  Camera 
+} from 'lucide-react';
 import { encodeSyncData, SYNC_PREFIX } from '../utils/syncUtils';
 
 const StaffDashboard = ({ 
@@ -10,27 +17,20 @@ const StaffDashboard = ({
   onScanUser, 
   isStaffMode = false, 
   onExitStaffMode,
-  isScanning = false 
+  isScanning = false,
+  checkpoints = [],
+  sections = []
 }) => {
   const [scannedData, setScannedData] = useState(initialScannedData);
   const [isShowingApplyQR, setIsShowingApplyQR] = useState(false);
   const [applyQRData, setApplyQRData] = useState('');
 
-  // Sync state if initialScannedData changes (e.g. when a new user is scanned while dashboard is open)
-  React.useEffect(() => {
+  useEffect(() => {
     if (initialScannedData) {
       setScannedData(initialScannedData);
     }
   }, [initialScannedData]);
 
-  // Handle data scanned from User
-  const handleUserScanned = (userData) => {
-    setScannedData(userData);
-  };
-
-  // Exposed to parent via ref or prop-callback pattern, but here we use state passed from App
-  // For simplicity in this implementation, App will call a handler or we use a separate state in App
-  
   const toggleStamp = (id) => {
     if (!scannedData) return;
     const newStamps = scannedData.stamps.includes(id)
@@ -43,11 +43,14 @@ const StaffDashboard = ({
   const toggleExchange = () => {
     if (!scannedData) return;
     
-    // Ensure all stamps are collected before marking as exchanged
-    const isComplete = scannedData.stamps.length >= Object.keys(STAMP_SPOTS).length;
+    const isAnySectionComplete = sections.length > 0 && sections.some(sec => {
+      const secCps = checkpoints.filter(cp => cp.sectionId === sec.id);
+      return secCps.length > 0 && secCps.every(cp => scannedData.stamps.includes(cp.qrId || cp.id));
+    });
+    const isComplete = isAnySectionComplete || (checkpoints.length > 0 && scannedData.stamps.length >= checkpoints.length);
     
     if (!scannedData.isExchanged && !isComplete) {
-      alert("すべてのスタンプが揃っていないため、交換済みに変更することはできません。");
+      alert("いずれかのエリアのスタンプがコンプリートされていないため、交換済みに変更することはできません。");
       return;
     }
 
@@ -60,7 +63,7 @@ const StaffDashboard = ({
         stamps: [],
         isExchanged: false,
         isDismissed: false,
-        nonce: scannedData.nonce // Keep the session nonce
+        nonce: scannedData.nonce
       });
     }
   };
@@ -77,7 +80,7 @@ const StaffDashboard = ({
         <header className="staff-header">
           <div className="staff-title">
             <ScanLine size={20} />
-            <h2>管理者パネル {isStaffMode && <span className="mode-badge">STAFF MODE</span>}</h2>
+            <h2>現場スタッフパネル {isStaffMode && <span className="mode-badge">STAFF MODE</span>}</h2>
           </div>
           
           <div className="staff-header-actions">
@@ -103,7 +106,16 @@ const StaffDashboard = ({
               <ScanLine size={48} />
             </div>
             <h3>ユーザーをスキャン</h3>
-            <p>ユーザーの「スタッフ用同期QR」をスキャンして操作を開始してください。</p>
+            <div className="staff-instructions">
+              <h4>【スタッフモードの使い方】</h4>
+              <ol style={{ textAlign: 'left', fontSize: '0.85rem', lineHeight: '1.5', margin: '12px 0 24px', paddingLeft: '20px', color: '#4b5563' }}>
+                <li>参加者の画面の一番下にある「©2026 なずな祭実行委員会」という文字を素早く5回連続でタップして、QRコードを表示してもらいます。</li>
+                <li>「スキャンを開始」ボタンを押し、参加者のQRを読み取ります。</li>
+                <li>参加者のスタンプ取得状況や景品交換状況が表示・編集できるようになります。</li>
+                <li>内容を変更した後、「変更を適用してQR生成」を押します。</li>
+                <li>表示されたQRを、今度は参加者の端末から読み取ってもらうと変更が反映されます。</li>
+              </ol>
+            </div>
             <button className="btn-primary btn-large-staff" onClick={onScanUser}>
               スキャンを開始
             </button>
@@ -135,7 +147,7 @@ const StaffDashboard = ({
             <div className="user-status-card">
               <div className="status-item">
                 <span className="label">取得済みスタンプ:</span>
-                <span className="value">{scannedData.stamps.length} / {Object.keys(STAMP_SPOTS).length}</span>
+                <span className="value">{scannedData.stamps.length} / {checkpoints.length}</span>
               </div>
               <div className="status-item">
                 <span className="label">景品交換状況:</span>
@@ -146,8 +158,10 @@ const StaffDashboard = ({
             </div>
 
             <div className="stamp-toggle-grid">
-              {Object.entries(STAMP_SPOTS).map(([id, spot], index) => {
+              {checkpoints.map((cp, index) => {
+                const id = cp.qrId || cp.id;
                 const isActive = scannedData.stamps.includes(id);
+                const spotName = cp.name || `スポット ${index + 1}`;
                 return (
                   <button 
                     key={id} 
@@ -155,7 +169,7 @@ const StaffDashboard = ({
                     onClick={() => toggleStamp(id)}
                   >
                     <div className="toggle-number">{index + 1}</div>
-                    <div className="toggle-name">{spot.name}</div>
+                    <div className="toggle-name">{spotName}</div>
                     {isActive && <CheckCircle2 className="toggle-check" size={16} />}
                   </button>
                 );
@@ -164,7 +178,7 @@ const StaffDashboard = ({
 
             <div className="staff-actions-grid">
               <button 
-                className={`btn-staff-action toggle-exchange ${(!scannedData.isExchanged && scannedData.stamps.length < Object.keys(STAMP_SPOTS).length) ? 'disabled' : ''}`} 
+                className={`btn-staff-action toggle-exchange ${(!scannedData.isExchanged && scannedData.stamps.length < checkpoints.length) ? 'disabled' : ''}`} 
                 onClick={toggleExchange}
               >
                 <RefreshCcw size={18} />

@@ -40,7 +40,7 @@ export const SYNC_PREFIX = {
  * Not cryptographic, but sufficient for integrity verification of QR transfers.
  * A static salt is added to prevent trivial manual QR generation.
  */
-const SYNC_SALT = import.meta.env.VITE_SYNC_SALT || 'default-fallback-salt';
+const SYNC_SALT = import.meta.env.VITE_SYNC_SALT || 'nazuna-stamp-sync-salt-2026';
 
 const checksum = (str) => {
   let saltedStr = str + SYNC_SALT;

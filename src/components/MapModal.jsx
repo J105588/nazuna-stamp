@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { X, Navigation, LocateFixed } from 'lucide-react';
-import { STAMP_SPOTS, calculateDistance } from '../utils/geoUtils';
+import { calculateDistance } from '../utils/geoUtils';
+import { stampDb } from '../utils/stampDb';
 
 // Fix for Leaflet default icon issues in React
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -42,13 +43,29 @@ function ChangeView({ center, zoom }) {
 
 function MapModal({ onClose }) {
   const [currentPos, setCurrentPos] = useState(null);
-  const [mapCenter, setMapCenter] = useState([35.668872, 139.854878]); // Default to some spot
-  const [zoom, setZoom] = useState(16);
+  const [mapCenter, setMapCenter] = useState([35.6812, 139.7671]);
+  const [zoom, setZoom] = useState(14);
   const [isLocating, setIsLocating] = useState(true);
   const [locatingError, setLocatingError] = useState(false);
+  const [checkpoints, setCheckpoints] = useState([]);
+  const [sections, setSections] = useState([]);
 
   useEffect(() => {
-    // Prevent background scrolling
+    const loadMapData = async () => {
+      const cps = await stampDb.getCheckpointsAsync();
+      const secs = await stampDb.getSectionsAsync();
+      setCheckpoints(cps);
+      setSections(secs);
+
+      if (cps.length > 0) {
+        setMapCenter([cps[0].lat, cps[0].lon]);
+        setZoom(16);
+      }
+    };
+    loadMapData();
+  }, []);
+
+  useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = 'auto';
@@ -72,24 +89,17 @@ function MapModal({ onClose }) {
           const pos = [position.coords.latitude, position.coords.longitude];
           setCurrentPos(pos);
           setMapCenter(pos);
-          setZoom(17);
+          setZoom(16);
           setIsLocating(false);
         },
         (error) => {
           console.error("Error getting geolocation:", error);
           setIsLocating(false);
           setLocatingError(true);
-          
-          // Fallback to first spot if geolocation fails
-          const firstSpot = Object.values(STAMP_SPOTS)[0];
-          if (firstSpot) {
-            setMapCenter([firstSpot.lat, firstSpot.lon]);
-          }
         },
         { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
       );
 
-      // Watch position for updates
       watchId = navigator.geolocation.watchPosition(
         (position) => {
           setCurrentPos([position.coords.latitude, position.coords.longitude]);
@@ -109,11 +119,13 @@ function MapModal({ onClose }) {
   const handleRecenter = () => {
     if (currentPos) {
       setMapCenter(currentPos);
-      setZoom(17);
-    } else {
-      // If we don't have a position, try requesting again
-      window.location.reload(); // Simple way to re-trigger the entire flow if needed, but let's be more elegant
+      setZoom(16);
     }
+  };
+
+  const getSectionName = (sectionId) => {
+    const sec = sections.find(s => s.id === sectionId);
+    return sec ? sec.name : '';
   };
 
   return (
@@ -123,7 +135,7 @@ function MapModal({ onClose }) {
           <X size={24} />
         </button>
         
-        <h3>周辺マップ</h3>
+        <h3>周辺マップ (駅・エリア別スポット)</h3>
         
         <div className="map-wrapper">
           <MapContainer 
@@ -138,20 +150,23 @@ function MapModal({ onClose }) {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             
-            {/* Stamp Spots */}
-            {Object.entries(STAMP_SPOTS).map(([id, spot]) => (
+            {/* Dynamic Stamp Spots from DB (No checkpoint names used) */}
+            {checkpoints.map((cp, idx) => (
               <Marker 
-                key={id} 
-                position={[spot.lat, spot.lon]} 
+                key={cp.id} 
+                position={[cp.lat, cp.lon]} 
                 icon={spotIcon}
               >
                 <Popup>
                   <div className="popup-content">
-                    <strong>{spot.name}</strong>
-                    <p>スタンプラリースポット</p>
+                    {cp.sectionId && (
+                      <span className="popup-sec-tag">{getSectionName(cp.sectionId)}</span>
+                    )}
+                    <strong>{cp.name || `スポット ${idx + 1}`}</strong>
+                    <p>{cp.description || 'スタンプラリーポイント'}</p>
                     {currentPos && (
                       <div className="distance-info">
-                        現在地から: <strong>{Math.round(calculateDistance(currentPos[0], currentPos[1], spot.lat, spot.lon))}m</strong>
+                        現在地から: <strong>{Math.round(calculateDistance(currentPos[0], currentPos[1], cp.lat, cp.lon))}m</strong>
                       </div>
                     )}
                   </div>
