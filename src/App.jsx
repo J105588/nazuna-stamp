@@ -4,6 +4,7 @@ import StampCard from './components/StampCard';
 import QRScanner from './components/QRScanner';
 import RewardScreen from './components/RewardScreen';
 import MapModal from './components/MapModal';
+import AreaSelectModal from './components/AreaSelectModal';
 import { storage } from './utils/storage';
 import { stampDb } from './utils/stampDb';
 import { X, Map as MapIcon, AlertTriangle } from 'lucide-react';
@@ -25,7 +26,10 @@ function App() {
     staffPasscode: "",
     adminPasscode: ""
   });
-  const [activeSectionId, setActiveSectionId] = useState(null);
+  const [activeSectionId, setActiveSectionId] = useState(() => {
+    return storage.load('selected_section_id') || null;
+  });
+  const [isAreaModalOpen, setIsAreaModalOpen] = useState(false);
 
   const [isScanning, setIsScanning] = useState(false);
   const [isExchanged, setIsExchanged] = useState(false);
@@ -67,8 +71,15 @@ function App() {
       ]);
       setSections(secList);
       setCheckpoints(cpList);
-      if (secList.length > 0 && !activeSectionId) {
-        setActiveSectionId(secList[0].id);
+      const savedSectionId = storage.load('selected_section_id');
+      if (secList.length > 0) {
+        if (savedSectionId && secList.some(s => s.id === savedSectionId)) {
+          setActiveSectionId(savedSectionId);
+        } else {
+          setActiveSectionId(secList[0].id);
+          storage.save('selected_section_id', secList[0].id);
+          setIsAreaModalOpen(true);
+        }
       }
 
       // Load user progress and filter based on fetched checkpoints
@@ -278,8 +289,13 @@ function App() {
     }
   };
 
+  const handleSelectSection = (secId) => {
+    setActiveSectionId(secId);
+    storage.save('selected_section_id', secId);
+  };
+
   useEffect(() => {
-    if (showPasscode || isMapOpen || isTermsModalOpen || isScanning || isUserSyncModalOpen || isStaffDashboardOpen || isAdminMode) {
+    if (showPasscode || isMapOpen || isTermsModalOpen || isScanning || isUserSyncModalOpen || isStaffDashboardOpen || isAdminMode || isAreaModalOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
@@ -287,7 +303,7 @@ function App() {
     return () => {
       document.body.style.overflow = 'auto';
     };
-  }, [showPasscode, isMapOpen, isTermsModalOpen, isScanning, isUserSyncModalOpen, isStaffDashboardOpen, isAdminMode]);
+  }, [showPasscode, isMapOpen, isTermsModalOpen, isScanning, isUserSyncModalOpen, isStaffDashboardOpen, isAdminMode, isAreaModalOpen]);
 
   // Master Admin Mode (Separate DB Management View) - Access allowed even if stopped
   if (isAdminMode) {
@@ -427,7 +443,8 @@ function App() {
             sections={sections}
             checkpoints={checkpoints}
             activeSectionId={activeSectionId}
-            onSectionChange={setActiveSectionId}
+            onSectionChange={handleSelectSection}
+            onOpenAreaModal={() => setIsAreaModalOpen(true)}
             isComplete={isComplete}
             isExchanged={isExchanged}
             onOpenCamera={() => setIsScanning(true)}
@@ -474,7 +491,7 @@ function App() {
 
           {/* Floating Map Button */}
           <button className="fab-map" onClick={toggleMap} aria-label="地図を表示">
-            <MapIcon size={24} />
+            <MapIcon size={30} />
           </button>
         </>
       )}
@@ -483,7 +500,25 @@ function App() {
         <OnboardingTour onComplete={handleCompleteOnboarding} />
       )}
 
-      {isMapOpen && <MapModal onClose={() => setIsMapOpen(false)} />}
+      {isMapOpen && (
+        <MapModal 
+          activeSectionId={activeSectionId}
+          onOpenAreaModal={() => setIsAreaModalOpen(true)}
+          onClose={() => setIsMapOpen(false)} 
+        />
+      )}
+
+      {isAreaModalOpen && (
+        <AreaSelectModal
+          sections={sections}
+          checkpoints={checkpoints}
+          stamps={stamps}
+          activeSectionId={activeSectionId}
+          onSelectSection={handleSelectSection}
+          onClose={() => setIsAreaModalOpen(false)}
+          isCancelable={!!activeSectionId}
+        />
+      )}
 
       {isTermsModalOpen && (
         <TermsModal onClose={() => setIsTermsModalOpen(false)} forceScroll={false} />

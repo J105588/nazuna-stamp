@@ -7,6 +7,7 @@ const StampCard = ({
   checkpoints = [],
   activeSectionId,
   onSectionChange,
+  onOpenAreaModal,
   isComplete,
   isExchanged,
   onOpenCamera,
@@ -81,36 +82,26 @@ const StampCard = ({
         <h1 className="event-title">なずな祭<br />街歩きスタンプラリー</h1>
       </div>
 
-      {/* Section Tabs (Station Selection) */}
+      {/* Selected Area Banner & Change Button */}
       {sections.length > 0 && (
-        <div className="section-tabs-container">
-          <div className="section-tabs-header">
+        <div className="active-area-banner">
+          <div className="active-area-info">
+            <div className="active-area-badge">
+              <Building2 size={16} />
+              <span>選択中のエリア</span>
+            </div>
+            <div className="active-area-name">
+              {currentSection?.name || '未選択'}
+            </div>
+          </div>
+          <button 
+            className="btn-change-area" 
+            onClick={onOpenAreaModal}
+            title="エリアを変更"
+          >
             <Building2 size={16} />
-            <span>エリア（駅）を選択</span>
-          </div>
-          <div className="section-tabs-grid">
-            {sections.map((sec) => {
-              const secCps = checkpoints.filter(cp => cp.sectionId === sec.id);
-              const secStamped = secCps.filter(cp => stamps.includes(cp.qrId || cp.id)).length;
-              const isSecFull = secCps.length > 0 && secStamped === secCps.length;
-              const isActive = sec.id === (currentSection?.id);
-
-              return (
-                <button
-                  key={sec.id}
-                  className={`section-tab-chip ${isActive ? 'active' : ''} ${isSecFull ? 'sec-complete' : ''}`}
-                  onClick={() => onSectionChange && onSectionChange(sec.id)}
-                >
-                  <span className="tab-name">{sec.name}</span>
-                  {isSecFull ? (
-                    <CheckCircle2 size={14} className="sec-complete-icon" />
-                  ) : (
-                    <span className="tab-badge">{secStamped}/{secCps.length}</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+            <span>エリアを変更</span>
+          </button>
         </div>
       )}
 

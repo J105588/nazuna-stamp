@@ -41,7 +41,7 @@ function ChangeView({ center, zoom }) {
   return null;
 }
 
-function MapModal({ onClose }) {
+function MapModal({ activeSectionId, onOpenAreaModal, onClose }) {
   const [currentPos, setCurrentPos] = useState(null);
   const [mapCenter, setMapCenter] = useState([35.6812, 139.7671]);
   const [zoom, setZoom] = useState(14);
@@ -54,16 +54,22 @@ function MapModal({ onClose }) {
     const loadMapData = async () => {
       const cps = await stampDb.getCheckpointsAsync();
       const secs = await stampDb.getSectionsAsync();
-      setCheckpoints(cps);
       setSections(secs);
 
-      if (cps.length > 0) {
-        setMapCenter([cps[0].lat, cps[0].lon]);
-        setZoom(16);
+      // Filter checkpoints by selected section if activeSectionId is set
+      const filteredCps = activeSectionId
+        ? cps.filter(cp => cp.sectionId === activeSectionId)
+        : cps;
+
+      setCheckpoints(filteredCps);
+
+      if (filteredCps.length > 0) {
+        setMapCenter([filteredCps[0].lat, filteredCps[0].lon]);
+        setZoom(15);
       }
     };
     loadMapData();
-  }, []);
+  }, [activeSectionId]);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -88,8 +94,6 @@ function MapModal({ onClose }) {
         (position) => {
           const pos = [position.coords.latitude, position.coords.longitude];
           setCurrentPos(pos);
-          setMapCenter(pos);
-          setZoom(16);
           setIsLocating(false);
         },
         (error) => {
@@ -123,10 +127,8 @@ function MapModal({ onClose }) {
     }
   };
 
-  const getSectionName = (sectionId) => {
-    const sec = sections.find(s => s.id === sectionId);
-    return sec ? sec.name : '';
-  };
+  const currentSection = sections.find(s => s.id === activeSectionId);
+  const sectionName = currentSection ? currentSection.name : '選択エリア';
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -134,13 +136,16 @@ function MapModal({ onClose }) {
         <button className="modal-close" onClick={onClose}>
           <X size={24} />
         </button>
-        
-        <h3>周辺マップ (駅・エリア別スポット)</h3>
-        
+
+        <div className="map-header-info">
+          <h3>周辺マップ</h3>
+          <span className="map-area-tag">エリア「{sectionName}」のスポットのみ表示中</span>
+        </div>
+
         <div className="map-wrapper">
-          <MapContainer 
-            center={mapCenter} 
-            zoom={zoom} 
+          <MapContainer
+            center={mapCenter}
+            zoom={zoom}
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%' }}
           >
@@ -149,19 +154,17 @@ function MapModal({ onClose }) {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            
-            {/* Dynamic Stamp Spots from DB (No checkpoint names used) */}
+
+            {/* Filtered Stamp Spots */}
             {checkpoints.map((cp, idx) => (
-              <Marker 
-                key={cp.id} 
-                position={[cp.lat, cp.lon]} 
+              <Marker
+                key={cp.id}
+                position={[cp.lat, cp.lon]}
                 icon={spotIcon}
               >
                 <Popup>
                   <div className="popup-content">
-                    {cp.sectionId && (
-                      <span className="popup-sec-tag">{getSectionName(cp.sectionId)}</span>
-                    )}
+                    <span className="popup-sec-tag">{sectionName}</span>
                     <strong>{cp.name || `スポット ${idx + 1}`}</strong>
                     <p>{cp.description || 'スタンプラリーポイント'}</p>
                     {currentPos && (
@@ -205,15 +208,26 @@ function MapModal({ onClose }) {
           </button>
         </div>
 
-        <div className="map-legend">
-          <div className="legend-item">
-            <div className="legend-icon spot"></div>
-            <span>スタンプポイント</span>
+        <div className="map-footer-controls">
+          <div className="map-legend">
+            <div className="legend-item">
+              <div className="legend-icon spot"></div>
+              <span>スタンプポイント</span>
+            </div>
+            <div className="legend-item">
+              <div className="legend-icon current"></div>
+              <span>現在地</span>
+            </div>
           </div>
-          <div className="legend-item">
-            <div className="legend-icon current"></div>
-            <span>現在地</span>
-          </div>
+
+          {onOpenAreaModal && (
+            <button className="btn-change-area-map" onClick={() => {
+              onClose();
+              onOpenAreaModal();
+            }}>
+              <span>エリアを変更</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
