@@ -77,7 +77,7 @@ const StampCard = ({
       setTapCount(0);
     }}>
       <div className="header" onClick={handleHeaderTap}>
-        <img src="/app-icon.jpg" alt="なずな祭ロゴ" className="event-logo-img-small" />
+        <img src="/nazuna-fes.png" alt="なずな祭ロゴ" className="event-logo-img-small" />
         <h1 className="event-title">なずな祭<br />街歩きスタンプラリー</h1>
       </div>
 
