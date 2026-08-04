@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import JSZip from 'jszip';
 import {
   X,
   Layers,
@@ -16,7 +17,10 @@ import {
   Save,
   Check,
   RefreshCw,
-  Navigation
+  Navigation,
+  Download,
+  FolderDown,
+  FolderArchive
 } from 'lucide-react';
 import { stampDb, generateUUID } from '../utils/stampDb';
 import { isSupabaseConfigured } from '../lib/supabase';
@@ -254,6 +258,203 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
     }
   };
 
+  // 人間が読める形式のファイル名を出力するヘルパー (例: 市川真間駅エリア_01_北口ロータリー.png)
+  const getHumanReadableFileName = (checkpoint, sectionName = '') => {
+    const orderNum = checkpoint.order || 1;
+    const orderStr = String(orderNum).padStart(2, '0');
+    const secNameRaw = (sectionName || checkpoint.sectionName || '').trim();
+    const cpNameRaw = (checkpoint.name || checkpoint.displayName || `スポット${orderNum}`).trim();
+
+    // OSファイル名として使用不可な文字（\ / : * ? " < > |）を全角またはアンダースコアに安全置換
+    const safeSec = secNameRaw.replace(/[/\\?%*:|"<>]/g, '_');
+    const safeCp = cpNameRaw.replace(/[/\\?%*:|"<>]/g, '_');
+
+    if (safeSec) {
+      return `${safeSec}_${orderStr}_${safeCp}.png`;
+    }
+    return `${orderStr}_${safeCp}.png`;
+  };
+
+  // CanvasからPNG DataURLを生成する関数
+  const getQrCanvasDataUrl = (checkpoint, sectionName = '', targetSvgElement = null) => {
+    return new Promise((resolve) => {
+      const qrId = checkpoint.qrId || checkpoint.id;
+      const cpName = checkpoint.name || checkpoint.displayName || 'チェックポイント';
+      const displaySecName = sectionName || checkpoint.sectionName || '';
+      const qrUrl = `${window.location.origin}${window.location.pathname}?stamp=${qrId}`;
+
+      const targetSvg = targetSvgElement ||
+                        document.querySelector(`.qr-svg-item-${qrId}`) ||
+                        document.querySelector('.qr-container-large svg');
+
+      if (!targetSvg) {
+        resolve(null);
+        return;
+      }
+
+      try {
+        const xml = new XMLSerializer().serializeToString(targetSvg);
+        const svg64 = btoa(unescape(encodeURIComponent(xml)));
+        const imageSrc = `data:image/svg+xml;base64,${svg64}`;
+
+        const canvas = document.createElement('canvas');
+        const width = 1000;
+        const height = 1120;
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        const img = new Image();
+        img.onload = () => {
+          // 背景 (白)
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
+
+          // 外枠
+          ctx.strokeStyle = '#334155';
+          ctx.lineWidth = 8;
+          ctx.strokeRect(30, 30, width - 60, height - 60);
+
+          // セクション名
+          if (displaySecName) {
+            ctx.fillStyle = '#64748b';
+            ctx.font = 'bold 36px "Inter", "Noto Sans JP", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(displaySecName, width / 2, 110);
+          }
+
+          // スポット名
+          ctx.fillStyle = '#0f172a';
+          ctx.font = 'bold 46px "Inter", "Noto Sans JP", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(cpName, width / 2, displaySecName ? 175 : 130);
+
+          // QRコード画像 (640x640)
+          const qrSize = 640;
+          const qrX = (width - qrSize) / 2;
+          const qrY = displaySecName ? 220 : 170;
+          ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+
+          // フッター URL & タイトル
+          ctx.fillStyle = '#334155';
+          ctx.font = '26px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(qrUrl, width / 2, height - 130);
+
+          ctx.fillStyle = '#64748b';
+          ctx.font = 'bold 24px "Inter", "Noto Sans JP", sans-serif';
+          ctx.fillText('なずな祭 スタンプラリー', width / 2, height - 75);
+
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => resolve(null);
+        img.src = imageSrc;
+      } catch (err) {
+        console.error("Canvas render error:", err);
+        resolve(null);
+      }
+    });
+  };
+
+  // 単体QRコードのPNGダウンロード処理
+  const handleDownloadQrCode = async (checkpoint, sectionName = '') => {
+    const dataUrl = await getQrCanvasDataUrl(checkpoint, sectionName);
+    if (dataUrl) {
+      const fileName = getHumanReadableFileName(checkpoint, sectionName);
+      const a = document.createElement('a');
+      a.download = fileName;
+      a.href = dataUrl;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      setPreviewQrItem({ ...checkpoint, displayName: checkpoint.name || 'チェックポイント', sectionName });
+      setTimeout(async () => {
+        const el = document.querySelector('.qr-container-large svg');
+        if (el) {
+          const url = await getQrCanvasDataUrl(checkpoint, sectionName, el);
+          if (url) {
+            const fileName = getHumanReadableFileName(checkpoint, sectionName);
+            const a = document.createElement('a');
+            a.download = fileName;
+            a.href = url;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }
+        }
+      }, 150);
+    }
+  };
+
+  // 複数チェックポイントの.zip一括ダウンロード処理
+  const handleBulkZipDownload = async (targetCheckpoints, targetSectionName = '') => {
+    if (!targetCheckpoints || targetCheckpoints.length === 0) {
+      alert('ダウンロード対象のチェックポイントがありません。');
+      return;
+    }
+
+    setIsLoading(true);
+    const zip = new JSZip();
+
+    try {
+      for (let i = 0; i < targetCheckpoints.length; i++) {
+        const cp = targetCheckpoints[i];
+        const secName = targetSectionName || sections.find(s => s.id === cp.sectionId)?.name || '未設定エリア';
+        const orderNum = cp.order || (i + 1);
+        const orderStr = String(orderNum).padStart(2, '0');
+        const cpName = cp.name || cp.displayName || `スポット${orderNum}`;
+
+        const safeSec = secName.trim().replace(/[/\\?%*:|"<>]/g, '_');
+        const safeCp = cpName.trim().replace(/[/\\?%*:|"<>]/g, '_');
+
+        // 画面上のプレビューコンテナにQRCodeを描画
+        setPreviewQrItem({ ...cp, displayName: cpName, sectionName: secName });
+
+        // レンダリング待機
+        await new Promise(r => setTimeout(r, 180));
+
+        const svgEl = document.querySelector('.qr-container-large svg');
+        if (svgEl) {
+          const base64Png = await getQrCanvasDataUrl(cp, secName, svgEl);
+          if (base64Png) {
+            const base64Data = base64Png.replace(/^data:image\/png;base64,/, '');
+
+            // ZIP構造: 単一セクション指定の場合は直下にファイル、全セクション一括の場合はフォルダ分け
+            const filePath = targetSectionName
+              ? `${orderStr}_${safeCp}.png`
+              : `${safeSec}/${orderStr}_${safeCp}.png`;
+
+            zip.file(filePath, base64Data, { base64: true });
+          }
+        }
+      }
+
+      setPreviewQrItem(null);
+
+      // ZIPファイル生成
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const archiveFileName = targetSectionName
+        ? `${targetSectionName.trim().replace(/[/\\?%*:|"<>]/g, '_')}_QRコード集.zip`
+        : `スタンプラリー_全QRコード集.zip`;
+
+      const downloadUrl = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = archiveFileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+
+    } catch (err) {
+      console.error("ZIP generation error:", err);
+      alert("ZIPファイルの生成中にエラーが発生しました。");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLatChange = (e, setLat, setLon) => {
     const val = e.target.value;
     if (val.includes(',')) {
@@ -420,9 +621,22 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
               <h3>駅別セクション & チェックポイントDB管理</h3>
               <p className="admin-subtitle">チェックポイントの緯度・経度座標を指定・保存します</p>
             </div>
-            <button className="btn-text-danger" onClick={handleResetDb}>
-              <RotateCcw size={16} /> データを全消去
-            </button>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              {checkpoints.length > 0 && (
+                <button
+                  type="button"
+                  className="btn-small-primary"
+                  onClick={() => handleBulkZipDownload(checkpoints)}
+                  disabled={isLoading}
+                  title="全セクションの全QRコードを1つのZIPファイルで一括ダウンロード"
+                >
+                  <FolderArchive size={16} /> 全QR一括ZIP保存 ({checkpoints.length}件)
+                </button>
+              )}
+              <button className="btn-text-danger" onClick={handleResetDb}>
+                <RotateCcw size={16} /> データを全消去
+              </button>
+            </div>
           </div>
 
           {/* Add Section Card */}
@@ -487,6 +701,15 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
                             <span className="cp-count-tag">{sectionCps.length} 個のスポット</span>
                           </div>
                           <div className="section-actions">
+                            {sectionCps.length > 0 && (
+                              <button
+                                className="btn-icon"
+                                onClick={() => handleBulkZipDownload(sectionCps, section.name)}
+                                title={`${section.name}の全QRコードをZIPでダウンロード`}
+                              >
+                                <FolderArchive size={16} />
+                              </button>
+                            )}
                             <button
                               className="btn-icon"
                               onClick={() => {
@@ -510,35 +733,29 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
                       {sectionCps.map((cp, cpIdx) => (
                         <div key={cp.id} className="checkpoint-item">
                           {editingCpId === cp.id ? (
-                            <div className="inline-edit-cp-form" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              <div style={{ display: 'flex', gap: '4px' }}>
+                            <div className="inline-edit-cp-form">
+                              <div className="form-group-row">
                                 <input
                                   type="text"
                                   value={editCpName}
                                   onChange={(e) => setEditCpName(e.target.value)}
                                   placeholder="スポット名"
-                                  style={{ flex: 1 }}
                                 />
-                              </div>
-                              <div style={{ display: 'flex', gap: '4px' }}>
-                                <input
-                                  type="text"
-                                  value={editCpDesc}
-                                  onChange={(e) => setEditCpDesc(e.target.value)}
-                                  placeholder="説明文"
-                                  style={{ flex: 1 }}
-                                />
-                              </div>
-                              <div style={{ display: 'flex', gap: '4px' }}>
                                 <input
                                   type="number"
                                   value={editCpOrder}
                                   onChange={(e) => setEditCpOrder(e.target.value)}
-                                  placeholder="順番 / スロット番号 (例: 1, 2, 3...)"
-                                  style={{ flex: 1 }}
+                                  placeholder="順番 (例: 1, 2, 3)"
+                                  style={{ width: '110px' }}
                                 />
                               </div>
-                              <div style={{ display: 'flex', gap: '4px' }}>
+                              <input
+                                type="text"
+                                value={editCpDesc}
+                                onChange={(e) => setEditCpDesc(e.target.value)}
+                                placeholder="説明文 (任意)"
+                              />
+                              <div className="geo-inputs">
                                 <input
                                   type="text"
                                   value={editCpLat}
@@ -551,35 +768,37 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
                                   onChange={(e) => setEditCpLon(e.target.value)}
                                   placeholder="経度 (lon)"
                                 />
-                              </div>
-                              <div className="stamp-icon-upload" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => handleImageUpload(e, setEditCpStampIcon)}
-                                  style={{ maxWidth: '140px', fontSize: '0.8rem' }}
-                                />
-                                {editCpStampIcon && editCpStampIcon.startsWith('data:image') && (
-                                  <img
-                                    src={editCpStampIcon}
-                                    alt="プレビュー"
-                                    style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
+                                <div className="stamp-icon-upload">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleImageUpload(e, setEditCpStampIcon)}
+                                    style={{ maxWidth: '140px', fontSize: '0.8rem' }}
                                   />
-                                )}
-                                <button type="button" className="btn-icon" onClick={() => setEditCpStampIcon('')} title="画像をクリア">
-                                  <Trash2 size={14} />
+                                  {editCpStampIcon && editCpStampIcon.startsWith('data:image') && (
+                                    <img
+                                      src={editCpStampIcon}
+                                      alt="プレビュー"
+                                      style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
+                                    />
+                                  )}
+                                  <button type="button" className="btn-icon" onClick={() => setEditCpStampIcon('')} title="画像をクリア">
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                                <button
+                                  type="button"
+                                  className="btn-icon"
+                                  onClick={() => handleGetCurrentLocation(setEditCpLat, setEditCpLon)}
+                                  title="現在地を取得"
+                                >
+                                  <Navigation size={18} />
                                 </button>
                               </div>
-                              <button
-                                type="button"
-                                className="btn-icon"
-                                onClick={() => handleGetCurrentLocation(setEditCpLat, setEditCpLon)}
-                                title="現在地を取得"
-                              >
-                                <Navigation size={18} />
-                              </button>
-                              <button className="btn-small-primary" onClick={() => handleUpdateCheckpoint(cp.id)}>保存</button>
-                              <button className="btn-small-secondary" onClick={() => setEditingCpId(null)}>完了</button>
+                              <div className="form-actions">
+                                <button className="btn-small-primary" onClick={() => handleUpdateCheckpoint(cp.id)}>保存</button>
+                                <button className="btn-small-secondary" onClick={() => setEditingCpId(null)}>完了</button>
+                              </div>
                             </div>
                           ) : (
                             <>
@@ -601,10 +820,17 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
                               <div className="cp-actions">
                                 <button
                                   className="btn-qr-preview"
-                                  onClick={() => setPreviewQrItem({ ...cp, displayName: cp.name || `スポット ${cpIdx + 1}` })}
+                                  onClick={() => setPreviewQrItem({ ...cp, displayName: cp.name || `スポット ${cpIdx + 1}`, sectionName: section.name })}
                                   title="QRコードを表示"
                                 >
                                   <QrCode size={18} />
+                                </button>
+                                <button
+                                  className="btn-qr-preview btn-qr-download"
+                                  onClick={() => handleDownloadQrCode(cp, section.name)}
+                                  title="QRコード(PNG)をダウンロード"
+                                >
+                                  <Download size={18} />
                                 </button>
                                 <button
                                   className="btn-icon"
@@ -633,26 +859,28 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
                       {addingCheckpointSectionId === section.id ? (
                         <form onSubmit={(e) => handleAddCheckpoint(section.id, e)} className="add-cp-form">
                           <h5>新しいチェックポイント座標の追加</h5>
-                          <input
-                            type="text"
-                            value={newCpName}
-                            onChange={(e) => setNewCpName(e.target.value)}
-                            placeholder="スポット名"
-                            style={{ marginBottom: '8px', width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-                          />
+                          <div className="form-group-row">
+                            <input
+                              type="text"
+                              value={newCpName}
+                              onChange={(e) => setNewCpName(e.target.value)}
+                              placeholder="スポット名"
+                              style={{ flex: 2 }}
+                            />
+                            <input
+                              type="number"
+                              value={newCpOrder}
+                              onChange={(e) => setNewCpOrder(e.target.value)}
+                              placeholder="順番 (例: 1, 2, 3)"
+                              style={{ flex: 1 }}
+                            />
+                          </div>
                           <input
                             type="text"
                             value={newCpDesc}
                             onChange={(e) => setNewCpDesc(e.target.value)}
-                            placeholder="説明文"
-                            style={{ marginBottom: '8px', width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
-                          />
-                          <input
-                            type="number"
-                            value={newCpOrder}
-                            onChange={(e) => setNewCpOrder(e.target.value)}
-                            placeholder="順番 / スロット番号 (例: 1, 2, 3, 4)"
-                            style={{ marginBottom: '8px', width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ccc' }}
+                            placeholder="説明文 (任意)"
+                            style={{ marginBottom: '10px' }}
                           />
                           <div className="geo-inputs">
                             <input
@@ -755,12 +983,21 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
                     <span>QRコード用URL (ポスター印刷用):</span>
                     <code style={{ wordBreak: 'break-all', fontSize: '0.75rem' }}>{qrUrl}</code>
                   </div>
+                  <div className="qr-modal-actions" style={{ display: 'flex', gap: '8px', marginTop: '16px', width: '100%' }}>
+                    <button
+                      className="btn-primary"
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                      onClick={() => handleDownloadQrCode(previewQrItem, previewQrItem.sectionName)}
+                    >
+                      <Download size={18} /> QR画像をダウンロード (PNG)
+                    </button>
+                    <button className="btn-secondary" style={{ flex: 1 }} onClick={() => setPreviewQrItem(null)}>
+                      閉じる
+                    </button>
+                  </div>
                 </>
               );
             })()}
-            <button className="btn-primary" onClick={() => setPreviewQrItem(null)}>
-              閉じる
-            </button>
           </div>
         </div>
       )}

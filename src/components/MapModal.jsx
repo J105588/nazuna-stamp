@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, CircleMarker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { X, Navigation, LocateFixed } from 'lucide-react';
 import { calculateDistance } from '../utils/geoUtils';
@@ -24,12 +24,12 @@ const spotIcon = new L.DivIcon({
   iconAnchor: [12, 12],
 });
 
-// Custom Icon for Current Location (Blue Pulsing)
+// Custom Icon for Current Location Pulsing Wave
 const currentPosIcon = new L.DivIcon({
   className: 'current-pos-icon',
-  html: `<div class="pulse-wrapper"><div class="pulse-dot"></div><div class="pulse-ring"></div></div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+  html: `<div class="pulse-wrapper"><div class="pulse-ring"></div></div>`,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
 });
 
 // Component to handle map centering
@@ -177,11 +177,23 @@ function MapModal({ activeSectionId, onOpenAreaModal, onClose }) {
               </Marker>
             ))}
 
-            {/* Current Position */}
+            {/* Current Position (Blue CircleMarker + Pulsing Wave) */}
             {currentPos && (
-              <Marker position={currentPos} icon={currentPosIcon}>
-                <Popup>現在地</Popup>
-              </Marker>
+              <>
+                <CircleMarker
+                  center={currentPos}
+                  radius={9}
+                  pathOptions={{
+                    fillColor: '#2563eb',
+                    fillOpacity: 1,
+                    color: '#ffffff',
+                    weight: 3
+                  }}
+                >
+                  <Popup>現在地</Popup>
+                </CircleMarker>
+                <Marker position={currentPos} icon={currentPosIcon} />
+              </>
             )}
           </MapContainer>
 
