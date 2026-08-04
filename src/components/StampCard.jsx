@@ -226,7 +226,7 @@ const StampCard = ({
           <CheckCircle2 size={22} className="lock-icon" />
           <div className="lock-text-content">
             <strong>「{completedSection.name}」で達成済みです</strong>
-            <p>規約により、他エリアでの追加スタンプ獲得はできません。</p>
+            <p>他エリアでの追加スタンプ獲得はできません。</p>
           </div>
         </div>
       ) : (

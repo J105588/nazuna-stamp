@@ -59,7 +59,7 @@ export const RewardScreen = ({ isExchanged, isDismissed, onExchange, onDismiss }
             <CheckCircle2 size={80} className="icon-success-large" />
             <h2>引き換え完了しました</h2>
           </div>
-          
+
           <div className="dynamic-clock-large">
             <p className="clock-label">現在時刻（引き換え証明）</p>
             <div className="time-display-large">
@@ -92,7 +92,7 @@ export const RewardScreen = ({ isExchanged, isDismissed, onExchange, onDismiss }
           <Gift size={20} />
           <span>特典引き換え</span>
         </div>
-        <h2>特典受取スライダー</h2>
+        <h2>特典受取はこちら</h2>
         {!isExchanged && (
           <p className="sub-text">
             スタッフの確認のもと、右へスライドしてください
@@ -112,12 +112,12 @@ export const RewardScreen = ({ isExchanged, isDismissed, onExchange, onDismiss }
 
       <div className="slider-section">
         <div className={`slider-track-container ${isExchanged ? 'exchanged' : ''} ${isDragging ? 'dragging' : ''}`}>
-          <div 
-            className="slider-fill-progress" 
-            style={{ width: `${fillPercent}%` }} 
+          <div
+            className="slider-fill-progress"
+            style={{ width: `${fillPercent}%` }}
           />
-          <div 
-            className="slider-text-label" 
+          <div
+            className="slider-text-label"
             style={{ opacity: isExchanged ? 0 : Math.max(0, 1 - (sliderValue / 70)) }}
           >
             <span>右へスライドして引き換え</span>
@@ -135,16 +135,16 @@ export const RewardScreen = ({ isExchanged, isDismissed, onExchange, onDismiss }
             className={`exchange-slider ${isExchanged ? 'disabled-slider' : ''}`}
           />
         </div>
-        
+
         {isExchanged ? (
           <div className="exchanged-badge">
-             <CheckCircle2 size={20} />
-             <span>特典引き換え済みです</span>
+            <CheckCircle2 size={20} />
+            <span>特典引き換え済みです</span>
           </div>
         ) : (
           <div className="warning-notice-box">
-             <AlertTriangle size={15} />
-             <p>※必ずスタッフの目の前でスライドを行ってください。</p>
+            <AlertTriangle size={15} />
+            <p>※必ずスタッフの目の前でスライドを行ってください。</p>
           </div>
         )}
       </div>
