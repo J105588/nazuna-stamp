@@ -7,7 +7,9 @@ import {
   Save, 
   ScanLine, 
   Trash2, 
-  Camera 
+  Camera,
+  QrCode,
+  Sparkles
 } from 'lucide-react';
 import { encodeSyncData, SYNC_PREFIX } from '../utils/syncUtils';
 
@@ -77,25 +79,27 @@ const StaffDashboard = ({
   return (
     <div className={isStaffMode ? "staff-full-page" : "staff-modal-overlay"}>
       <div className="staff-dashboard">
-        <header className="staff-header">
-          <div className="staff-title">
-            <ScanLine size={20} />
-            <h2>現場スタッフパネル {isStaffMode && <span className="mode-badge">STAFF MODE</span>}</h2>
+        <header className="staff-header-compact">
+          <div className="staff-title-compact">
+            <ScanLine size={18} className="staff-icon" />
+            <span>現場スタッフパネル</span>
+            {isStaffMode && <span className="mode-badge-compact">STAFF MODE</span>}
           </div>
           
           <div className="staff-header-actions">
             <button 
-              className={`btn-camera-toggle ${isScanning ? 'active' : ''}`}
+              className={`btn-camera-toggle-compact ${isScanning ? 'active' : ''}`}
               onClick={onScanUser}
               title={isScanning ? "カメラをオフにする" : "カメラをオンにする"}
             >
-              <Camera size={20} />
+              <Camera size={16} />
+              <span>{isScanning ? "カメラON" : "カメラ起動"}</span>
             </button>
             
             {isStaffMode ? (
-              <button className="btn-exit-staff" onClick={onExitStaffMode}>モード終了</button>
+              <button className="btn-exit-staff-compact" onClick={onExitStaffMode}>モード終了</button>
             ) : (
-              <button className="staff-close" onClick={onClose}><X size={24} /></button>
+              <button className="staff-close-btn" onClick={onClose}><X size={20} /></button>
             )}
           </div>
         </header>
@@ -103,30 +107,48 @@ const StaffDashboard = ({
         {!scannedData ? (
           <div className="staff-empty-state">
             <div className="empty-icon-box">
-              <ScanLine size={48} />
+              <ScanLine size={40} />
             </div>
-            <h3>ユーザーをスキャン</h3>
-            <div className="staff-instructions">
-              <h4>【スタッフモードの使い方】</h4>
-              <ol style={{ textAlign: 'left', fontSize: '0.85rem', lineHeight: '1.5', margin: '12px 0 24px', paddingLeft: '20px', color: '#4b5563' }}>
-                <li>参加者の画面の一番下にある「©2026 なずな祭実行委員会」という文字を素早く5回連続でタップして、QRコードを表示してもらいます。</li>
-                <li>「スキャンを開始」ボタンを押し、参加者のQRを読み取ります。</li>
-                <li>参加者のスタンプ取得状況や景品交換状況が表示・編集できるようになります。</li>
-                <li>内容を変更した後、「変更を適用してQR生成」を押します。</li>
-                <li>表示されたQRを、今度は参加者の端末から読み取ってもらうと変更が反映されます。</li>
-              </ol>
+            <h3>参加者のQRコードをスキャン</h3>
+            
+            <div className="staff-instructions-container">
+              <h4>【操作手順ステップ】</h4>
+              <div className="staff-steps-grid">
+                <div className="step-card">
+                  <span className="step-num">1</span>
+                  <p>参加者の画面最下部「©2026 なずな祭実行委員会」を5回連続タップしてもらい、QRを表示してもらいます。</p>
+                </div>
+                <div className="step-card">
+                  <span className="step-num">2</span>
+                  <p>下の「スキャンを開始」ボタンを押し、参加者のQRコードを読み取ります。</p>
+                </div>
+                <div className="step-card">
+                  <span className="step-num">3</span>
+                  <p>スタンプ取得状況のON/OFF切り替えや景品交換状態を必要に応じて編集します。</p>
+                </div>
+                <div className="step-card">
+                  <span className="step-num">4</span>
+                  <p>「変更を保存してQR表示」を押し、表示されたQRを参加者のスマホでスキャンしてもらえば完了です。</p>
+                </div>
+              </div>
             </div>
+
             <button className="btn-primary btn-large-staff" onClick={onScanUser}>
-              スキャンを開始
+              <Camera size={20} />
+              スキャンを開始する
             </button>
           </div>
         ) : isShowingApplyQR ? (
           <div className="staff-apply-qr">
-            <h3>変更を適用</h3>
-            <p>ユーザーの端末でこのQRをスキャンしてもらってください。</p>
+            <h3>変更を適用（確認用QRコード）</h3>
+            <p>参加者のスマホカメラで、以下のQRコードをスキャンしてもらってください。</p>
             
-            <div className="qr-container-large">
-              <QRCodeSVG value={applyQRData} size={240} level="L" includeMargin />
+            <div className="qr-container-sync-card">
+              <QRCodeSVG value={applyQRData} size={230} level="M" includeMargin />
+              <div className="qr-card-footer">
+                <QrCode size={14} />
+                <span>データ適用用確認QR</span>
+              </div>
             </div>
 
             <div className="apply-actions">
@@ -138,7 +160,7 @@ const StaffDashboard = ({
                   onClose();
                 }
               }}>
-                完了
+                適用完了（次の操作へ）
               </button>
             </div>
           </div>
@@ -147,7 +169,7 @@ const StaffDashboard = ({
             <div className="user-status-card">
               <div className="status-item">
                 <span className="label">取得済みスタンプ:</span>
-                <span className="value">{scannedData.stamps.length} / {checkpoints.length}</span>
+                <span className="value">{scannedData.stamps.length} / {checkpoints.length} 個</span>
               </div>
               <div className="status-item">
                 <span className="label">景品交換状況:</span>
@@ -157,23 +179,34 @@ const StaffDashboard = ({
               </div>
             </div>
 
-            <div className="stamp-toggle-grid">
-              {checkpoints.map((cp, index) => {
-                const id = cp.qrId || cp.id;
-                const isActive = scannedData.stamps.includes(id);
-                const spotName = cp.name || `スポット ${index + 1}`;
-                return (
-                  <button 
-                    key={id} 
-                    className={`stamp-toggle-item ${isActive ? 'active' : ''}`}
-                    onClick={() => toggleStamp(id)}
-                  >
-                    <div className="toggle-number">{index + 1}</div>
-                    <div className="toggle-name">{spotName}</div>
-                    {isActive && <CheckCircle2 className="toggle-check" size={16} />}
-                  </button>
-                );
-              })}
+            <div className="stamp-toggle-section">
+              <div className="section-subtitle">
+                <Sparkles size={16} />
+                <span>スタンプ個別の取得切り替え (タップで変更)</span>
+              </div>
+              <div className="stamp-toggle-grid">
+                {checkpoints.map((cp, index) => {
+                  const id = cp.qrId || cp.id;
+                  const isActive = scannedData.stamps.includes(id);
+                  const spotName = cp.name || `スポット ${index + 1}`;
+                  const sec = sections.find(s => s.id === cp.sectionId);
+                  return (
+                    <button 
+                      key={id} 
+                      className={`stamp-toggle-item ${isActive ? 'active' : ''}`}
+                      onClick={() => toggleStamp(id)}
+                      title={spotName}
+                    >
+                      <div className="toggle-header-row">
+                        <span className="toggle-number">#{index + 1}</span>
+                        {sec && <span className="toggle-sec-name">{sec.name}</span>}
+                        {isActive && <CheckCircle2 className="toggle-check" size={16} />}
+                      </div>
+                      <div className="toggle-name">{spotName}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="staff-actions-grid">
@@ -182,20 +215,20 @@ const StaffDashboard = ({
                 onClick={toggleExchange}
               >
                 <RefreshCcw size={18} />
-                {scannedData.isExchanged ? '未交換に戻す' : '交換済みにする'}
+                {scannedData.isExchanged ? '未交換に戻す' : '景品交換済みにする'}
               </button>
               <button className="btn-staff-action danger" onClick={resetUser}>
                 <Trash2 size={18} />
-                全リセット
+                進捗全リセット
               </button>
             </div>
 
             <div className="staff-footer-actions">
               <button className="btn-primary" onClick={generateApplyQR}>
-                <Save size={20} /> 変更を保存してQR表示
+                <Save size={20} /> 変更を保存して適用QRを表示
               </button>
               <button className="btn-text-only" onClick={() => setScannedData(null)}>
-                キャンセルして別のユーザーをスキャン
+                キャンセルして別のユーザーを読み取る
               </button>
             </div>
           </div>

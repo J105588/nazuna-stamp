@@ -2280,6 +2280,211 @@ html, body {
 }
 
 /* ==========================================================================
+   STAFF DASHBOARD REDESIGNED STYLES
+   ========================================================================== */
+.staff-header-compact {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 20px;
+  background: #ffffff;
+  border-bottom: 1.5px solid var(--border-color, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.staff-title-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--primary-color, #9b2d30);
+}
+
+.mode-badge-compact {
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.btn-camera-toggle-compact {
+  background: #ffffff;
+  border: 1px solid var(--border-color, #cbd5e1);
+  color: var(--text-dark, #0f172a);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.btn-camera-toggle-compact.active {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.btn-exit-staff-compact,
+.staff-close-btn {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* STEP Guide Container */
+.staff-instructions-container {
+  background: var(--card-subtle-bg, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 12px);
+  padding: 16px;
+  width: 100%;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.staff-instructions-container h4 {
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: var(--primary-color, #9b2d30);
+  margin: 0 0 12px 0;
+}
+
+.staff-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.step-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-sm, 8px);
+  padding: 10px 12px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.step-num {
+  background: var(--primary-color, #9b2d30);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 900;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-card p {
+  font-size: 0.82rem;
+  color: var(--text-dark, #1e293b);
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Stamp Toggle Grid & Item Optimization */
+.stamp-toggle-section {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.section-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--primary-color, #9b2d30);
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.stamp-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+.stamp-toggle-item {
+  background: #ffffff;
+  border: 1.5px solid var(--border-color, #cbd5e1);
+  border-radius: var(--radius-md, 10px);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.toggle-header-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.toggle-number {
+  font-size: 0.75rem;
+  font-weight: 900;
+  color: var(--primary-color, #9b2d30);
+}
+
+.toggle-sec-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: var(--card-subtle-bg, #f1f5f9);
+  color: var(--text-medium, #64748b);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.toggle-name {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--text-dark, #0f172a);
+  word-break: keep-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  text-align: left;
+}
+
+.stamp-toggle-item.active {
+  border-color: var(--primary-color, #9b2d30);
+  background: #fff5f5;
+}
+
+.stamp-toggle-item.active .toggle-name {
+  color: var(--primary-color, #9b2d30);
+}
+
+/* ==========================================================================
    STAFF DASHBOARD & STAFF MODE STYLES
    ========================================================================== */
 .staff-modal-overlay {
