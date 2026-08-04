@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, Check, ChevronDown, Building2, Sparkles, CheckCircle2, Layers, Star, Heart, Award, Flame, ThumbsUp, CheckCircle } from 'lucide-react';
+import { Camera, Check, ChevronDown, Building2, Sparkles, CheckCircle2, Layers, Star, Heart, Award, Flame, ThumbsUp, CheckCircle, Map, ChevronRight } from 'lucide-react';
 
 const StampCard = ({
   stamps,
@@ -8,6 +8,7 @@ const StampCard = ({
   activeSectionId,
   onSectionChange,
   onOpenAreaModal,
+  onOpenMap,
   isComplete,
   isExchanged,
   onOpenCamera,
@@ -29,8 +30,6 @@ const StampCard = ({
     const cp = sortedCheckpoints[i];
     return { slotNumber, cp };
   });
-
-
 
   const handleHeaderTap = () => {
     const newCount = headerTapCount + 1;
@@ -82,7 +81,7 @@ const StampCard = ({
         <h1 className="event-title">なずな祭<br />街歩きスタンプラリー</h1>
       </div>
 
-      {/* Selected Area Banner & Change Button */}
+      {/* Selected Area Banner */}
       {sections.length > 0 && (
         <div className="active-area-banner">
           <div className="active-area-info">
@@ -95,14 +94,27 @@ const StampCard = ({
             </div>
           </div>
           <button 
-            className="btn-change-area" 
+            className="btn-change-area-subtle" 
             onClick={onOpenAreaModal}
             title="エリアを変更"
           >
-            <Building2 size={16} />
-            <span>エリアを変更</span>
+            <span>エリア変更</span>
           </button>
         </div>
+      )}
+
+      {/* Prominent Map Callout Button */}
+      {onOpenMap && (
+        <button className="btn-map-prominent" onClick={onOpenMap} title="周辺スポットの地図を開く">
+          <div className="map-btn-icon-wrapper">
+            <Map size={24} />
+          </div>
+          <div className="map-btn-text-group">
+            <span className="map-btn-title">周辺スポットの地図を見る</span>
+            <span className="map-btn-subtitle">チェックポイントの正確な場所を確認</span>
+          </div>
+          <ChevronRight size={20} className="map-btn-arrow" />
+        </button>
       )}
 
       {/* Active Section Stamp Grid */}
@@ -110,6 +122,28 @@ const StampCard = ({
         <div className="section-title-label">
           <strong>{currentSection?.name || 'スタンプカード'}</strong>
           {currentSection?.description && <span className="sec-sub-desc">{currentSection.description}</span>}
+          
+          {totalSlotsCount > 0 && (
+            <div className="section-progress-pill" style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              marginTop: '8px',
+              padding: '4px 14px',
+              backgroundColor: 'var(--card-subtle-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '20px',
+              fontSize: '0.85rem',
+              fontWeight: '700',
+              color: 'var(--primary-color)'
+            }}>
+              <span>獲得スタンプ:</span>
+              <strong style={{ fontSize: '1.05rem', color: 'var(--primary-color)' }}>
+                {sectionCheckpoints.filter(cp => stamps.includes(cp.qrId || cp.id)).length}
+              </strong>
+              <span style={{ color: 'var(--text-light)' }}>/ {totalSlotsCount}</span>
+            </div>
+          )}
         </div>
 
         {totalSlotsCount === 0 ? (
@@ -182,10 +216,10 @@ const StampCard = ({
       )}
 
       {!isExchanged && (
-        <div className="camera-button-wrapper">
+        <div className="camera-button-action-area">
           <button className="scan-btn-large" onClick={onOpenCamera}>
             <div className="scan-btn-icon">
-              <Camera size={32} />
+              <Camera size={28} />
             </div>
             <span>スキャンする</span>
           </button>

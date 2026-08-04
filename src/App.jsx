@@ -445,6 +445,7 @@ function App() {
             activeSectionId={activeSectionId}
             onSectionChange={handleSelectSection}
             onOpenAreaModal={() => setIsAreaModalOpen(true)}
+            onOpenMap={toggleMap}
             isComplete={isComplete}
             isExchanged={isExchanged}
             onOpenCamera={() => setIsScanning(true)}
@@ -488,11 +489,6 @@ function App() {
               利用規約
             </button>
           </footer>
-
-          {/* Floating Map Button */}
-          <button className="fab-map" onClick={toggleMap} aria-label="地図を表示">
-            <MapIcon size={30} />
-          </button>
         </>
       )}
 
