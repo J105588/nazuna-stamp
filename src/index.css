@@ -2014,13 +2014,23 @@ html, body {
 /* ==========================================================================
    REWARD SCREEN & EXCHANGE SLIDER STYLES
    ========================================================================== */
+.reward-section-wrapper {
+  width: 100%;
+  padding: 0 clamp(16px, 4vw, 24px);
+  box-sizing: border-box;
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
+
 .reward-container {
+  width: 100%;
+  box-sizing: border-box;
   background: #ffffff;
   border: 1.5px solid var(--border-color, #e2e8f0);
   border-radius: var(--radius-xl, 16px);
   padding: clamp(20px, 4vw, 28px);
   box-shadow: var(--shadow-md);
-  margin-top: 24px;
+  margin-top: 0;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -2031,6 +2041,20 @@ html, body {
 
 .reward-container.ready-view {
   border-color: var(--primary-color, #9b2d30);
+}
+
+.reward-badge-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff5f5;
+  color: var(--primary-color, #9b2d30);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+  border: 1px solid #fecdd3;
 }
 
 .reward-header-simple h2 {
@@ -2044,6 +2068,111 @@ html, body {
   font-size: 0.85rem;
   color: var(--text-medium, #475569);
   margin: 0;
+}
+
+/* Premium Slider Component */
+.slider-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider-track-container {
+  position: relative;
+  width: 100%;
+  height: 60px;
+  background: #f1f5f9;
+  border-radius: 30px;
+  border: 2px solid var(--border-color, #cbd5e1);
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+}
+
+.slider-track-container.exchanged {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.slider-fill-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color, #9b2d30), #dc2626);
+  border-radius: 30px;
+  transition: width 0.05s ease-out;
+  box-shadow: 0 0 12px rgba(155, 45, 48, 0.4);
+}
+
+.slider-track-container.exchanged .slider-fill-progress {
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+  box-shadow: 0 0 12px rgba(22, 163, 74, 0.4);
+}
+
+.slider-text-label {
+  position: absolute;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: var(--text-dark, #1e293b);
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 0.15s ease;
+}
+
+.arrow-pulse {
+  animation: arrowPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes arrowPulse {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(5px); }
+}
+
+.exchange-slider {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  margin: 0;
+}
+
+.exchange-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid var(--primary-color, #9b2d30);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  cursor: grab;
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+
+.exchange-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.1);
+  background: #fff5f5;
+}
+
+.exchange-slider.disabled-slider::-webkit-slider-thumb {
+  border-color: #16a34a;
+  background: #ffffff;
+  cursor: default;
 }
 
 /* Clock Display */
@@ -2280,6 +2409,228 @@ html, body {
 }
 
 /* ==========================================================================
+   CUSTOM ALERT MODAL STYLES
+   ========================================================================== */
+.custom-alert-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.custom-alert-card {
+  background: #ffffff;
+  border-radius: var(--radius-xl, 20px);
+  width: 100%;
+  max-width: 380px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.alert-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--text-medium, #64748b);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.alert-close-btn:hover {
+  background: var(--card-subtle-bg, #f1f5f9);
+  color: var(--text-dark, #0f172a);
+}
+
+.alert-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.alert-icon.success { color: #16a34a; }
+.alert-icon.warning { color: #d97706; }
+.alert-icon.error { color: #dc2626; }
+.alert-icon.info { color: #2563eb; }
+
+.alert-title {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--text-dark, #0f172a);
+  margin: 0;
+}
+
+.alert-body {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.alert-message {
+  font-size: 0.9rem;
+  color: var(--text-medium, #475569);
+  line-height: 1.5;
+  margin: 0;
+  word-break: break-word;
+}
+
+.alert-footer {
+  width: 100%;
+}
+
+.btn-alert-confirm {
+  width: 100%;
+  padding: 12px;
+  border-radius: 30px;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.btn-alert-confirm.type-success {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+}
+.btn-alert-confirm.type-warning {
+  background: linear-gradient(135deg, #d97706, #b45309);
+}
+.btn-alert-confirm.type-error {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+.btn-alert-confirm.type-info {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.btn-alert-confirm:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+/* Shared Area Badge inside Spot Cards */
+.cp-shared-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+/* Custom Confirm Modal Additions */
+.confirm-modal-card {
+  max-width: 420px !important;
+}
+
+.confirm-icon-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #bfdbfe;
+}
+
+.confirm-target-box {
+  background: var(--card-subtle-bg, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 12px);
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.target-sec-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--primary-color, #9b2d30);
+  background: #fff5f5;
+  padding: 2px 10px;
+  border-radius: 12px;
+}
+
+.target-spot-name {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--text-dark, #0f172a);
+  margin: 0;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.btn-confirm-action {
+  width: 100%;
+  padding: 12px;
+  border-radius: 30px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-confirm-action.primary {
+  background: linear-gradient(135deg, var(--primary-color, #9b2d30), #dc2626);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(155, 45, 48, 0.25);
+}
+
+.btn-confirm-action.primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-confirm-action.secondary {
+  background: none;
+  border: 1px solid var(--border-color, #cbd5e1);
+  color: var(--text-medium, #64748b);
+}
+
+.btn-confirm-action.secondary:hover {
+  background: var(--card-subtle-bg, #f1f5f9);
+  color: var(--text-dark, #0f172a);
+}
+
+/* ==========================================================================
    STAFF DASHBOARD REDESIGNED STYLES
    ========================================================================== */
 .staff-header-compact {
@@ -2405,6 +2756,58 @@ html, body {
 .stamp-toggle-section {
   width: 100%;
   margin-bottom: 20px;
+}
+
+.staff-area-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.staff-area-group-card {
+  background: var(--card-subtle-bg, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 12px);
+  padding: 14px 16px;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.area-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color, #cbd5e1);
+}
+
+.area-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+  font-weight: 900;
+  color: var(--text-dark, #0f172a);
+}
+
+.area-group-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-medium, #64748b);
+  background: #ffffff;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, #cbd5e1);
+}
+
+.area-group-badge.complete {
+  color: #16a34a;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  font-weight: 900;
 }
 
 .section-subtitle {
@@ -2922,6 +3325,8 @@ html, body {
    COMPLETE BANNER CARD STYLES
    ========================================================================== */
 .complete-banner-card {
+  width: 100%;
+  box-sizing: border-box;
   background: linear-gradient(135deg, #fffbe0, #fff3b0);
   border: 2px solid #f59e0b;
   border-radius: var(--radius-lg, 14px);

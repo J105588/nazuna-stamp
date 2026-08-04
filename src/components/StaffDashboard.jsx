@@ -9,9 +9,12 @@ import {
   Trash2, 
   Camera,
   QrCode,
-  Sparkles
+  Sparkles,
+  Building2
 } from 'lucide-react';
 import { encodeSyncData, SYNC_PREFIX } from '../utils/syncUtils';
+
+import CustomAlertModal from './CustomAlertModal';
 
 const StaffDashboard = ({ 
   initialScannedData, 
@@ -26,6 +29,11 @@ const StaffDashboard = ({
   const [scannedData, setScannedData] = useState(initialScannedData);
   const [isShowingApplyQR, setIsShowingApplyQR] = useState(false);
   const [applyQRData, setApplyQRData] = useState('');
+  const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'info' });
+
+  const showAlert = (message, title = '', type = 'info') => {
+    setAlertModal({ isOpen: true, title, message, type });
+  };
 
   useEffect(() => {
     if (initialScannedData) {
@@ -52,7 +60,7 @@ const StaffDashboard = ({
     const isComplete = isAnySectionComplete || (checkpoints.length > 0 && scannedData.stamps.length >= checkpoints.length);
     
     if (!scannedData.isExchanged && !isComplete) {
-      alert("いずれかのエリアのスタンプがコンプリートされていないため、交換済みに変更することはできません。");
+      showAlert("いずれかのエリアのスタンプがコンプリートされていないため、交換済みに変更することはできません。", "交換不可", "warning");
       return;
     }
 
@@ -182,31 +190,81 @@ const StaffDashboard = ({
             <div className="stamp-toggle-section">
               <div className="section-subtitle">
                 <Sparkles size={16} />
-                <span>スタンプ個別の取得切り替え (タップで変更)</span>
+                <span>エリア別スタンプ取得切り替え (タップで変更)</span>
               </div>
-              <div className="stamp-toggle-grid">
-                {checkpoints.map((cp, index) => {
-                  const id = cp.qrId || cp.id;
-                  const isActive = scannedData.stamps.includes(id);
-                  const spotName = cp.name || `スポット ${index + 1}`;
-                  const sec = sections.find(s => s.id === cp.sectionId);
-                  return (
-                    <button 
-                      key={id} 
-                      className={`stamp-toggle-item ${isActive ? 'active' : ''}`}
-                      onClick={() => toggleStamp(id)}
-                      title={spotName}
-                    >
-                      <div className="toggle-header-row">
-                        <span className="toggle-number">#{index + 1}</span>
-                        {sec && <span className="toggle-sec-name">{sec.name}</span>}
-                        {isActive && <CheckCircle2 className="toggle-check" size={16} />}
+
+              {sections.length > 0 ? (
+                <div className="staff-area-groups-list">
+                  {sections.map((sec) => {
+                    const secCps = checkpoints
+                      .filter(cp => cp.sectionId === sec.id)
+                      .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+                    if (secCps.length === 0) return null;
+
+                    const acquiredCount = secCps.filter(cp => scannedData.stamps.includes(cp.qrId || cp.id)).length;
+                    const isSecComplete = acquiredCount === secCps.length;
+
+                    return (
+                      <div key={sec.id} className="staff-area-group-card">
+                        <div className="area-group-header">
+                          <div className="area-group-title">
+                            <Building2 size={16} />
+                            <span>{sec.name}</span>
+                          </div>
+                          <span className={`area-group-badge ${isSecComplete ? 'complete' : ''}`}>
+                            {acquiredCount} / {secCps.length} {isSecComplete ? '✓ COMPLETE' : ''}
+                          </span>
+                        </div>
+
+                        <div className="stamp-toggle-grid">
+                          {secCps.map((cp) => {
+                            const id = cp.qrId || cp.id;
+                            const isActive = scannedData.stamps.includes(id);
+                            const spotName = cp.name || `スポット ${cp.order || 1}`;
+                            return (
+                              <button 
+                                key={id} 
+                                className={`stamp-toggle-item ${isActive ? 'active' : ''}`}
+                                onClick={() => toggleStamp(id)}
+                                title={spotName}
+                              >
+                                <div className="toggle-header-row">
+                                  <span className="toggle-number">No.{cp.order || 1}</span>
+                                  {isActive && <CheckCircle2 className="toggle-check" size={16} />}
+                                </div>
+                                <div className="toggle-name">{spotName}</div>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <div className="toggle-name">{spotName}</div>
-                    </button>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="stamp-toggle-grid">
+                  {checkpoints.map((cp, index) => {
+                    const id = cp.qrId || cp.id;
+                    const isActive = scannedData.stamps.includes(id);
+                    const spotName = cp.name || `スポット ${index + 1}`;
+                    return (
+                      <button 
+                        key={id} 
+                        className={`stamp-toggle-item ${isActive ? 'active' : ''}`}
+                        onClick={() => toggleStamp(id)}
+                        title={spotName}
+                      >
+                        <div className="toggle-header-row">
+                          <span className="toggle-number">#{index + 1}</span>
+                          {isActive && <CheckCircle2 className="toggle-check" size={16} />}
+                        </div>
+                        <div className="toggle-name">{spotName}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="staff-actions-grid">
@@ -234,6 +292,14 @@ const StaffDashboard = ({
           </div>
         )}
       </div>
+
+      <CustomAlertModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

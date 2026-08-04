@@ -14,6 +14,8 @@ import UserSyncModal from './components/UserSyncModal';
 import { decodeSyncData, SYNC_PREFIX } from './utils/syncUtils';
 import TermsModal from './components/TermsModal';
 import OnboardingTour from './components/OnboardingTour';
+import CustomAlertModal from './components/CustomAlertModal';
+import CustomConfirmModal from './components/CustomConfirmModal';
 import { supabase, isSupabaseConfigured, setAdminAuth } from './lib/supabase';
 
 function App() {
@@ -26,6 +28,26 @@ function App() {
     staffPasscode: "",
     adminPasscode: ""
   });
+  
+  // Custom Alert Modal State
+  const [alertModal, setAlertModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
+
+  // Out of Area Scan Confirmation State
+  const [pendingOutAreaScan, setPendingOutAreaScan] = useState(null);
+
+  const showAlert = (message, title = '', type = 'info') => {
+    setAlertModal({
+      isOpen: true,
+      title,
+      message,
+      type
+    });
+  };
   const [activeSectionId, setActiveSectionId] = useState(() => {
     return storage.load('selected_section_id') || null;
   });
@@ -119,9 +141,9 @@ function App() {
               ...(currentSaved || {}),
               stamps: currentStamps
             });
-            alert(`「${targetCp.name || 'スポット'}」にチェックインしました！`);
+            showAlert(`「${targetCp.name || 'スポット'}」にチェックインしました！`, 'スタンプ獲得', 'success');
           } else {
-            alert(`「${targetCp.name || 'スポット'}」は既にチェックイン済みです！`);
+            showAlert(`「${targetCp.name || 'スポット'}」は既にチェックイン済みです！`, '獲得済み', 'warning');
           }
           
           if (targetCp.sectionId) {
@@ -166,7 +188,7 @@ function App() {
     setScannerClosedAt(Date.now());
 
     if (settings.isAppStopped) {
-      alert("現在サービス停止中のため、スタンプの獲得・チェックインはできません。");
+      showAlert("現在サービス停止中のため、スタンプの獲得・チェックインはできません。", "サービス停止中", "error");
       return;
     }
 
@@ -182,7 +204,7 @@ function App() {
       if (userData) {
         setScannedUserData(userData);
       } else {
-        alert("ユーザーデータの読み取りに失敗しました。QRコードを再表示してください。");
+        showAlert("ユーザーデータの読み取りに失敗しました。QRコードを再表示してください。", "読み取りエラー", "error");
       }
       return;
     }
@@ -192,7 +214,7 @@ function App() {
       const updatedData = decodeSyncData(decodedText, SYNC_PREFIX.STAFF_DATA);
       if (updatedData) {
         if (updatedData.nonce !== currentSyncNonce) {
-          alert("この同期用QRコードはあなたの端末用ではありません。別のユーザーのデータである可能性があります。");
+          showAlert("この同期用QRコードはあなたの端末用ではありません。別のユーザーのデータである可能性があります。", "同期対象外", "warning");
           return;
         }
 
@@ -204,9 +226,9 @@ function App() {
         setIsDismissed(updatedData.isDismissed || false);
         saveState(filteredSyncedStamps, updatedData.isExchanged, updatedData.isDismissed);
         setCurrentSyncNonce(null);
-        alert("同期が完了しました！");
+        showAlert("データ同期が完了しました！", "同期完了", "success");
       } else {
-        alert("同期データの復号に失敗しました。");
+        showAlert("同期データの復号に失敗しました。", "同期エラー", "error");
       }
       return;
     }
@@ -223,20 +245,69 @@ function App() {
       }
     }
 
-    const targetCp = checkpoints.find(cp => (cp.qrId || cp.id) === qrId || cp.id === qrId);
-    const spotId = targetCp ? (targetCp.qrId || targetCp.id) : qrId;
+    // 全チェックポイントから一致するものを取得（複数エリアでの同一QR共用に対応）
+    const matchingCps = checkpoints.filter(cp => (cp.qrId || cp.id) === qrId || cp.id === qrId);
 
-    if (!stamps.includes(spotId)) {
-      const newStamps = [...stamps, spotId];
+    if (matchingCps.length === 0) {
+      showAlert("該当するチェックポイントが見つかりませんでした。", "スキャンエラー", "error");
+      return;
+    }
+
+    // 1. 現在選択中のエリア内のCPがあればそれを優先
+    let targetCp = matchingCps.find(cp => cp.sectionId === activeSectionId);
+    
+    // 2. 現在のエリアになければ他エリアのCP
+    const isOutOfArea = !targetCp;
+    if (!targetCp) {
+      targetCp = matchingCps[0];
+    }
+
+    const targetSec = sections.find(s => s.id === targetCp.sectionId);
+    const secName = targetSec ? targetSec.name : '別エリア';
+    const spotIdsToAcquire = matchingCps.map(cp => cp.qrId || cp.id);
+
+    // 選択中エリア外の場合 ➔ 確認ダイアログを表示
+    if (isOutOfArea && targetCp.sectionId) {
+      setPendingOutAreaScan({
+        targetCp,
+        matchingCps,
+        secName,
+        spotIdsToAcquire
+      });
+      return;
+    }
+
+    // 同一エリア内スキャンの場合
+    const unacquiredIds = spotIdsToAcquire.filter(id => !stamps.includes(id));
+    if (unacquiredIds.length > 0) {
+      const newStamps = [...stamps, ...unacquiredIds];
       setStamps(newStamps);
       saveState(newStamps, isExchanged, isDismissed);
-      if (targetCp && targetCp.sectionId) {
-        setActiveSectionId(targetCp.sectionId);
-      }
-      alert(`「${targetCp?.name || 'スポット'}」のスタンプを獲得しました！`);
+      showAlert(`「${targetCp.name || 'スポット'}」のスタンプを獲得しました！`, "スタンプ獲得", "success");
     } else {
-      alert("このスポットは既にチェックイン済みです！");
+      showAlert("このスポットは既にチェックイン済みです！", "獲得済み", "warning");
     }
+  };
+
+  // エリア外スタンプ獲得＆エリア変更の承認実行ハンドラー
+  const handleConfirmOutAreaScan = () => {
+    if (!pendingOutAreaScan) return;
+    const { targetCp, secName, spotIdsToAcquire } = pendingOutAreaScan;
+
+    // 選択エリア変更 ＆ localStorageへ保存
+    handleSelectSection(targetCp.sectionId);
+
+    const unacquiredIds = spotIdsToAcquire.filter(id => !stamps.includes(id));
+    if (unacquiredIds.length > 0) {
+      const newStamps = [...stamps, ...unacquiredIds];
+      setStamps(newStamps);
+      saveState(newStamps, isExchanged, isDismissed);
+      showAlert(`「${targetCp.name || 'スポット'}」のスタンプを獲得し、エリアを「${secName}」に変更しました！`, "スタンプ獲得＆エリア移動", "success");
+    } else {
+      showAlert(`エリアを「${secName}」に変更しました。（スタンプは獲得済みです）`, "エリア移動完了", "info");
+    }
+
+    setPendingOutAreaScan(null);
   };
 
   const handleCancelScan = () => {
@@ -268,7 +339,7 @@ function App() {
         if (isStaff) isStaffValid = true;
       }
     } else {
-      alert("データベースが設定されていないため、管理者・スタッフ機能は利用できません。");
+      showAlert("データベースが設定されていないため、管理者・スタッフ機能は利用できません。", "DB未設定", "warning");
       setPasscodeInput("");
       return;
     }
@@ -284,7 +355,7 @@ function App() {
       setShowPasscode(false);
       setPasscodeInput("");
     } else {
-      alert("パスコードが正しくありません。");
+      showAlert("入力されたパスコードが正しくありません。", "認証エラー", "error");
       setPasscodeInput("");
     }
   };
@@ -569,6 +640,26 @@ function App() {
           </div>
         </div>
       )}
+
+      <CustomAlertModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      <CustomConfirmModal
+        isOpen={!!pendingOutAreaScan}
+        title="選択中のエリア外のスポットです"
+        secName={pendingOutAreaScan?.secName}
+        spotName={pendingOutAreaScan?.targetCp?.name || 'チェックポイント'}
+        message="スタンプを獲得して、選択中エリアを移動しますか？"
+        confirmText="獲得してエリア移動"
+        cancelText="キャンセル"
+        onConfirm={handleConfirmOutAreaScan}
+        onCancel={() => setPendingOutAreaScan(null)}
+      />
     </div>
   );
 }

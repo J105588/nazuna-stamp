@@ -24,10 +24,13 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  Link2,
+  Share2
 } from 'lucide-react';
 import { stampDb, generateUUID } from '../utils/stampDb';
 import { isSupabaseConfigured } from '../lib/supabase';
+import CustomAlertModal from './CustomAlertModal';
 
 const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
   const [activeTab, setActiveTab] = useState('spots'); // 'spots' | 'settings'
@@ -39,6 +42,13 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
     adminPasscode: ""
   });
   const [isLoading, setIsLoading] = useState(true);
+
+  // Custom Alert Modal State
+  const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', type: 'info' });
+
+  const showAlert = (message, title = '', type = 'info') => {
+    setAlertModal({ isOpen: true, title, message, type });
+  };
 
   // Settings form state
   const [isAppStopped, setIsAppStopped] = useState(false);
@@ -61,6 +71,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
   const [newCpDesc, setNewCpDesc] = useState('');
   const [newCpOrder, setNewCpOrder] = useState('');
   const [newCpStampIcon, setNewCpStampIcon] = useState('');
+  const [newCpCustomQrId, setNewCpCustomQrId] = useState('');
   const [editingCpId, setEditingCpId] = useState(null);
   const [editCpLat, setEditCpLat] = useState('');
   const [editCpLon, setEditCpLon] = useState('');
@@ -112,7 +123,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
       setTimeout(() => setSettingsSavedMessage(false), 3000);
       if (onSettingsChange) onSettingsChange(updated);
     } catch (err) {
-      alert('設定の保存に失敗しました: ' + err.message);
+      showAlert('設定の保存に失敗しました: ' + err.message, '保存エラー', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -129,7 +140,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
       setNewSectionDesc('');
       await loadData();
     } catch (err) {
-      alert('セクションの追加に失敗しました: ' + err.message);
+      showAlert('セクションの追加に失敗しました: ' + err.message, '追加エラー', 'error');
       setIsLoading(false);
     }
   };
@@ -145,7 +156,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
       setEditingSectionId(null);
       await loadData();
     } catch (err) {
-      alert('セクションの更新に失敗しました: ' + err.message);
+      showAlert('セクションの更新に失敗しました: ' + err.message, '更新エラー', 'error');
       setIsLoading(false);
     }
   };
@@ -157,7 +168,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
         await stampDb.deleteSectionAsync(id);
         await loadData();
       } catch (err) {
-        alert('セクションの削除に失敗しました: ' + err.message);
+        showAlert('セクションの削除に失敗しました: ' + err.message, '削除エラー', 'error');
         setIsLoading(false);
       }
     }
@@ -167,24 +178,24 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
   const handleAddCheckpoint = async (sectionId, e) => {
     e.preventDefault();
     if (!newCpLat || !newCpLon) {
-      alert('緯度および経度を入力してください。');
+      showAlert('緯度および経度を入力してください。', '入力エラー', 'warning');
       return;
     }
     const sectionCps = checkpoints.filter(cp => cp.sectionId === sectionId);
     const maxAllowedOrder = sectionCps.length + 1;
     let finalOrder = newCpOrder !== '' ? parseInt(newCpOrder, 10) : maxAllowedOrder;
     if (finalOrder > maxAllowedOrder || finalOrder < 1) {
-      alert(`順番は登録されている個数内（1〜${maxAllowedOrder}）で指定してください。`);
+      showAlert(`順番は登録されている個数内（1〜${maxAllowedOrder}）で指定してください。`, '順番指定エラー', 'warning');
       return;
     }
     const isDuplicate = sectionCps.some(cp => cp.order === finalOrder);
     if (isDuplicate) {
-      alert(`順番 [${finalOrder}] は既に別のスポットで使用されています。重複しない番号を指定してください。`);
+      showAlert(`順番 [${finalOrder}] は既に別のスポットで使用されています。重複しない番号を指定してください。`, '重複エラー', 'warning');
       return;
     }
 
     setIsLoading(true);
-    const newUuid = generateUUID();
+    const newUuid = newCpCustomQrId.trim() || generateUUID();
     try {
       await stampDb.addCheckpointAsync({
         lat: parseFloat(newCpLat),
@@ -203,9 +214,10 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
       setNewCpDesc('');
       setNewCpOrder('');
       setNewCpStampIcon('');
+      setNewCpCustomQrId('');
       await loadData();
     } catch (err) {
-      alert('チェックポイントの追加に失敗しました: ' + err.message);
+      showAlert('チェックポイントの追加に失敗しました: ' + err.message, '追加エラー', 'error');
       setIsLoading(false);
     }
   };
@@ -217,12 +229,12 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
     const maxAllowedOrder = sectionCps.length;
     let finalOrder = editCpOrder !== '' ? parseInt(editCpOrder, 10) : (targetCp?.order || 1);
     if (finalOrder > maxAllowedOrder || finalOrder < 1) {
-      alert(`順番は登録されている個数内（1〜${maxAllowedOrder}）で指定してください。`);
+      showAlert(`順番は登録されている個数内（1〜${maxAllowedOrder}）で指定してください。`, '順番指定エラー', 'warning');
       return;
     }
     const isDuplicate = sectionCps.some(cp => cp.id !== id && cp.order === finalOrder);
     if (isDuplicate) {
-      alert(`順番 [${finalOrder}] は既に別のスポットで使用されています。重複しない番号を指定してください。`);
+      showAlert(`順番 [${finalOrder}] は既に別のスポットで使用されています。重複しない番号を指定してください。`, '重複エラー', 'warning');
       return;
     }
 
@@ -245,7 +257,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
       setEditCpStampIcon('');
       await loadData();
     } catch (err) {
-      alert('チェックポイントの更新に失敗しました: ' + err.message);
+      showAlert('チェックポイントの更新に失敗しました: ' + err.message, '更新エラー', 'error');
       setIsLoading(false);
     }
   };
@@ -257,7 +269,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
         await stampDb.deleteCheckpointAsync(id);
         await loadData();
       } catch (err) {
-        alert('チェックポイントの削除に失敗しました: ' + err.message);
+        showAlert('チェックポイントの削除に失敗しました: ' + err.message, '削除エラー', 'error');
         setIsLoading(false);
       }
     }
@@ -491,7 +503,45 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
         { enableHighAccuracy: true }
       );
     } else {
-      alert("お使いのブラウザは位置情報に対応していません。");
+      showAlert("お使いのブラウザは位置情報に対応していません。", "位置情報エラー", "warning");
+    }
+  };
+
+  const handleSharedQrSelect = (selectedQrId) => {
+    setNewCpCustomQrId(selectedQrId);
+    if (!selectedQrId) return;
+
+    const sourceCp = checkpoints.find(cp => (cp.qrId || cp.id) === selectedQrId || cp.id === selectedQrId);
+    if (sourceCp) {
+      if (sourceCp.name) setNewCpName(sourceCp.name);
+      if (sourceCp.description) setNewCpDesc(sourceCp.description);
+      if (sourceCp.lat) setNewCpLat(String(sourceCp.lat));
+      if (sourceCp.lon) setNewCpLon(String(sourceCp.lon));
+      if (sourceCp.stampIcon) setNewCpStampIcon(sourceCp.stampIcon);
+    }
+  };
+
+  const handleQuickShareAdd = async (sourceCp, targetSectionId) => {
+    setIsLoading(true);
+    const sectionCps = checkpoints.filter(cp => cp.sectionId === targetSectionId);
+    const maxAllowedOrder = sectionCps.length + 1;
+
+    try {
+      await stampDb.addCheckpointAsync({
+        lat: sourceCp.lat,
+        lon: sourceCp.lon,
+        sectionId: targetSectionId,
+        qrId: sourceCp.qrId || sourceCp.id,
+        name: sourceCp.name || undefined,
+        description: sourceCp.description || undefined,
+        stampIcon: sourceCp.stampIcon || undefined,
+        order: maxAllowedOrder
+      });
+      await loadData();
+      showAlert(`「${sourceCp.name || 'スポット'}」をこのエリアに同一条件で共有追加しました！`, '共有追加完了', 'success');
+    } catch (err) {
+      showAlert('共有追加に失敗しました: ' + err.message, 'エラー', 'error');
+      setIsLoading(false);
     }
   };
 
@@ -626,6 +676,14 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
             >
               <Building2 size={18} />
               <span>エリア・スポット管理 ({checkpoints.length})</span>
+            </button>
+            <button
+              type="button"
+              className={`tab-btn ${activeTab === 'qr_mapping' ? 'active' : ''}`}
+              onClick={() => setActiveTab('qr_mapping')}
+            >
+              <QrCode size={18} />
+              <span>QR紐づけ＆共用マップ</span>
             </button>
             <button
               type="button"
@@ -816,6 +874,24 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
                                   <span className="uuid-label">固有識別子(UUID):</span>
                                   <code className="uuid-val">{cp.qrId || cp.id}</code>
                                 </div>
+                                {(() => {
+                                  const qid = cp.qrId || cp.id;
+                                  const sharedCps = checkpoints.filter(c => (c.qrId || c.id) === qid);
+                                  const otherSecNames = sharedCps
+                                    .filter(c => c.sectionId !== cp.sectionId)
+                                    .map(c => sections.find(s => s.id === c.sectionId)?.name)
+                                    .filter(Boolean);
+                                  
+                                  if (otherSecNames.length > 0) {
+                                    return (
+                                      <div className="cp-shared-badge" title="他のエリアでも共用されているQRコードです">
+                                        <Share2 size={12} />
+                                        <span>「{otherSecNames.join('」「')}」でも共用中</span>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </div>
 
                               <div className="cp-actions">
@@ -881,8 +957,23 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
                             value={newCpDesc}
                             onChange={(e) => setNewCpDesc(e.target.value)}
                             placeholder="説明文 (任意)"
-                            style={{ marginBottom: '10px' }}
+                            style={{ marginBottom: '8px' }}
                           />
+                          <select
+                            value={newCpCustomQrId}
+                            onChange={(e) => handleSharedQrSelect(e.target.value)}
+                            style={{ marginBottom: '10px', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', width: '100%' }}
+                          >
+                            <option value="">新規QRコードを自動生成（単独QR）</option>
+                            {checkpoints.map(cp => {
+                              const sec = sections.find(s => s.id === cp.sectionId);
+                              return (
+                                <option key={cp.id} value={cp.qrId || cp.id}>
+                                  [既存QRを共用] {cp.name || 'スポット'} ({sec ? sec.name : '別エリア'})
+                                </option>
+                              );
+                            })}
+                          </select>
                           <div className="geo-inputs">
                             <input
                               type="text"
@@ -964,7 +1055,152 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
             </div>
           )}
 
-          {/* TAB 2: SYSTEM SETTINGS & SECURITY */}
+          {/* TAB 2: QR CODE CROSS-MAPPING VIEW */}
+          {activeTab === 'qr_mapping' && (
+            <div className="tab-content-pane">
+              <div className="db-card qr-mapping-card">
+                <div className="qr-mapping-header">
+                  <div>
+                    <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '0 0 6px 0', fontSize: '1.1rem', color: 'var(--primary-color)' }}>
+                      <QrCode size={20} /> ポスターQRコード (UUID) 紐づけ・共用マップ
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-medium)' }}>
+                      各QRコード（UUID）がどのエリアのどのスポットに紐づいているか、エリア間での共用状況を一目で一覧確認できます。
+                    </p>
+                  </div>
+                </div>
+
+                {checkpoints.length === 0 ? (
+                  <div className="empty-state" style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
+                    チェックポイントがまだ登録されていません
+                  </div>
+                ) : (
+                  <div className="qr-mapping-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px', marginTop: '16px' }}>
+                    {(() => {
+                      // Group checkpoints by qrId / id
+                      const groups = {};
+                      checkpoints.forEach(cp => {
+                        const qid = cp.qrId || cp.id;
+                        if (!groups[qid]) groups[qid] = [];
+                        groups[qid].push(cp);
+                      });
+
+                      return Object.entries(groups).map(([qid, groupCps]) => {
+                        const isShared = groupCps.length > 1;
+                        return (
+                          <div 
+                            key={qid} 
+                            className={`qr-mapping-item-card ${isShared ? 'is-shared' : ''}`}
+                            style={{
+                              background: '#ffffff',
+                              borderRadius: '16px',
+                              border: isShared ? '2px solid #3b82f6' : '1px solid #e2e8f0',
+                              padding: '16px',
+                              boxShadow: isShared ? '0 4px 16px rgba(59, 130, 246, 0.12)' : '0 2px 8px rgba(0,0,0,0.04)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '12px'
+                            }}
+                          >
+                            <div className="qr-map-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', pb: '10px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <QrCode size={18} style={{ color: isShared ? '#2563eb' : '#64748b' }} />
+                                <code style={{ fontSize: '0.78rem', fontWeight: '800', color: '#1e293b', background: '#f8fafc', padding: '2px 6px', borderRadius: '6px' }}>{qid.slice(0, 18)}...</code>
+                              </div>
+                              <div style={{
+                                padding: '3px 10px',
+                                borderRadius: '12px',
+                                fontSize: '0.75rem',
+                                fontWeight: '800',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                background: isShared ? '#eff6ff' : '#f1f5f9',
+                                color: isShared ? '#1d4ed8' : '#475569',
+                                border: isShared ? '1px solid #bfdbfe' : '1px solid #e2e8f0'
+                              }}>
+                                {isShared ? (
+                                  <>
+                                    <Share2 size={12} />
+                                    <span>{groupCps.length}エリアで共用中</span>
+                                  </>
+                                ) : (
+                                  <span>単独エリア</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="qr-map-locations-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#64748b' }}>紐づき先スポット・エリア一覧:</span>
+                              {groupCps.map((item, idx) => {
+                                const sec = sections.find(s => s.id === item.sectionId);
+                                return (
+                                  <div 
+                                    className="location-row-item" 
+                                    key={item.id || idx}
+                                    style={{
+                                      background: '#f8fafc',
+                                      borderRadius: '8px',
+                                      padding: '8px 10px',
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      gap: '4px',
+                                      border: '1px solid #e2e8f0'
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span style={{
+                                        fontSize: '0.75rem',
+                                        fontWeight: '800',
+                                        color: '#9b2d30',
+                                        background: '#fff5f5',
+                                        padding: '1px 8px',
+                                        borderRadius: '10px',
+                                        border: '1px solid #fecdd3',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '3px'
+                                      }}>
+                                        <Building2 size={11} />
+                                        {sec ? sec.name : '別エリア'}
+                                      </span>
+                                      <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>{item.name || 'スポット'}</strong>
+                                    </div>
+                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                      緯度: {item.lat} / 経度: {item.lon}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            <div className="qr-map-card-footer" style={{ display: 'flex', gap: '8px', marginTop: 'auto', paddingTop: '8px' }}>
+                              <button
+                                className="btn-small-primary"
+                                style={{ flex: 1, padding: '8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                onClick={() => setPreviewQrItem({ ...groupCps[0], displayName: groupCps[0].name || 'スポット', sectionName: '共用QR' })}
+                              >
+                                <QrCode size={14} /> QR表示
+                              </button>
+                              <button
+                                className="btn-small-secondary"
+                                style={{ flex: 1, padding: '8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                                onClick={() => handleDownloadQrCode(groupCps[0], '共用QR')}
+                              >
+                                <Download size={14} /> PNG保存
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: SYSTEM SETTINGS & SECURITY */}
           {activeTab === 'settings' && (
             <div className="tab-content-pane">
               {/* SYSTEM SETTINGS CARD */}
@@ -1081,6 +1317,14 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
           </div>
         </div>
       )}
+      {/* Custom Alert Modal */}
+      <CustomAlertModal
+        isOpen={alertModal.isOpen}
+        title={alertModal.title}
+        message={alertModal.message}
+        type={alertModal.type}
+        onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

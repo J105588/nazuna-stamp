@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, Clock, AlertTriangle, ChevronRight, Gift, Sparkles } from 'lucide-react';
 
 export const RewardScreen = ({ isExchanged, isDismissed, onExchange, onDismiss }) => {
   const [sliderValue, setSliderValue] = useState(0);
@@ -37,10 +37,9 @@ export const RewardScreen = ({ isExchanged, isDismissed, onExchange, onDismiss }
 
   const handleSliderRelease = () => {
     if (isExchanged) return;
-    if (sliderValue > 95) {
-      // Show local overlay first
+    if (sliderValue > 90) {
+      setSliderValue(100);
       setShowSuccessOverlay(true);
-      // Trigger the parent state update
       onExchange();
     } else {
       setSliderValue(0);
@@ -80,20 +79,26 @@ export const RewardScreen = ({ isExchanged, isDismissed, onExchange, onDismiss }
     );
   }
 
+  const fillPercent = isExchanged ? 100 : sliderValue;
+
   return (
     <div className={`reward-container ${isExchanged ? 'exchanged-view' : 'ready-view'}`}>
       <div className="reward-header-simple">
-        <h2>特典引き換え</h2>
+        <div className="reward-badge-header">
+          <Gift size={20} />
+          <span>特典引き換え</span>
+        </div>
+        <h2>特典受取スライダー</h2>
         {!isExchanged && (
           <p className="sub-text">
-            スタッフの目の前で操作してください。
+            スタッフの確認のもと、右へスライドしてください
           </p>
         )}
       </div>
 
       <div className="dynamic-clock-inline">
         <div className="clock-icon-row">
-          <Clock size={20} />
+          <Clock size={18} />
           <span>現在時刻</span>
         </div>
         <div className="current-time-text">
@@ -102,32 +107,40 @@ export const RewardScreen = ({ isExchanged, isDismissed, onExchange, onDismiss }
       </div>
 
       <div className="slider-section">
-        <div className="slider-wrapper">
+        <div className={`slider-track-container ${isExchanged ? 'exchanged' : ''}`}>
+          <div 
+            className="slider-fill-progress" 
+            style={{ width: `${fillPercent}%` }} 
+          />
+          <div 
+            className="slider-text-label" 
+            style={{ opacity: isExchanged ? 0 : Math.max(0, 1 - (sliderValue / 70)) }}
+          >
+            <span>右へスライドして引き換え</span>
+            <ChevronRight size={18} className="arrow-pulse" />
+          </div>
           <input
             type="range"
             min="0"
             max="100"
-            value={isExchanged ? 100 : sliderValue}
+            value={fillPercent}
             onChange={handleSliderChange}
             onMouseUp={handleSliderRelease}
             onTouchEnd={handleSliderRelease}
             disabled={isExchanged}
             className={`exchange-slider ${isExchanged ? 'disabled-slider' : ''}`}
           />
-          <div className="slider-text" style={{ opacity: isExchanged ? 0 : 1 - (sliderValue / 100) }}>
-            スライドして引き換える ➔
-          </div>
         </div>
         
         {isExchanged ? (
           <div className="exchanged-badge">
              <CheckCircle2 size={20} />
-             <span>引き換え済み</span>
+             <span>特典引き換え済みです</span>
           </div>
         ) : (
           <div className="warning-notice-box">
-             <AlertTriangle size={16} />
-             <p>引き換え完了画面は一度閉じると再表示できません。必ずスタッフの確認を受けてから閉じてください。</p>
+             <AlertTriangle size={15} />
+             <p>※必ずスタッフの目の前でスライドを行ってください。</p>
           </div>
         )}
       </div>

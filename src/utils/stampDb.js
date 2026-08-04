@@ -188,14 +188,15 @@ export const stampDb = {
 
   addCheckpointAsync: async ({ lat, lon, sectionId, qrId, name, description, stampIcon, order }) => {
     const checkpoints = await stampDb.getCheckpointsAsync();
-    const uuid = qrId || generateUUID();
+    const recordId = generateUUID();
+    const sharedQrId = qrId || recordId;
     const sectionCps = checkpoints.filter(c => c.sectionId === sectionId);
     const newOrder = order !== undefined && order !== '' ? parseInt(order, 10) : (sectionCps.length + 1);
     
     if (isSupabaseConfigured && supabase) {
       const payload = {
-        id: uuid,
-        qr_id: uuid,
+        id: recordId,
+        qr_id: sharedQrId,
         lat: parseFloat(lat),
         lon: parseFloat(lon),
         section_id: sectionId,
