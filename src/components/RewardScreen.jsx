@@ -30,13 +30,17 @@ export const RewardScreen = ({ isExchanged, isDismissed, onExchange, onDismiss }
     };
   }, [showSuccessOverlay]);
 
+  const [isDragging, setIsDragging] = useState(false);
+
   const handleSliderChange = (e) => {
     if (isExchanged) return;
-    setSliderValue(e.target.value);
+    setIsDragging(true);
+    setSliderValue(Number(e.target.value));
   };
 
   const handleSliderRelease = () => {
     if (isExchanged) return;
+    setIsDragging(false);
     if (sliderValue > 90) {
       setSliderValue(100);
       setShowSuccessOverlay(true);
@@ -107,7 +111,7 @@ export const RewardScreen = ({ isExchanged, isDismissed, onExchange, onDismiss }
       </div>
 
       <div className="slider-section">
-        <div className={`slider-track-container ${isExchanged ? 'exchanged' : ''}`}>
+        <div className={`slider-track-container ${isExchanged ? 'exchanged' : ''} ${isDragging ? 'dragging' : ''}`}>
           <div 
             className="slider-fill-progress" 
             style={{ width: `${fillPercent}%` }} 

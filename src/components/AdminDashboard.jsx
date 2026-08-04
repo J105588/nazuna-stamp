@@ -141,6 +141,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
       await loadData();
     } catch (err) {
       showAlert('セクションの追加に失敗しました: ' + err.message, '追加エラー', 'error');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -157,6 +158,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
       await loadData();
     } catch (err) {
       showAlert('セクションの更新に失敗しました: ' + err.message, '更新エラー', 'error');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -169,6 +171,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
         await loadData();
       } catch (err) {
         showAlert('セクションの削除に失敗しました: ' + err.message, '削除エラー', 'error');
+      } finally {
         setIsLoading(false);
       }
     }
@@ -218,6 +221,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
       await loadData();
     } catch (err) {
       showAlert('チェックポイントの追加に失敗しました: ' + err.message, '追加エラー', 'error');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -258,6 +262,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
       await loadData();
     } catch (err) {
       showAlert('チェックポイントの更新に失敗しました: ' + err.message, '更新エラー', 'error');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -270,6 +275,7 @@ const AdminDashboard = ({ onClose, isFullView = true, onSettingsChange }) => {
         await loadData();
       } catch (err) {
         showAlert('チェックポイントの削除に失敗しました: ' + err.message, '削除エラー', 'error');
+      } finally {
         setIsLoading(false);
       }
     }

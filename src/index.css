@@ -618,6 +618,40 @@ html, body {
   animation: bounce 1.5s infinite;
 }
 
+.completed-lock-notice-box {
+  width: calc(100% - 32px);
+  margin: 0 16px 20px;
+  background: #fff7ed;
+  border: 1.5px solid #fdba74;
+  border-radius: var(--radius-lg, 12px);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  text-align: left;
+}
+
+.completed-lock-notice-box .lock-icon {
+  color: #ea580c;
+  flex-shrink: 0;
+}
+
+.completed-lock-notice-box .lock-text-content strong {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #c2410c;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.completed-lock-notice-box .lock-text-content p {
+  font-size: 0.82rem;
+  color: #9a3412;
+  margin: 0;
+  line-height: 1.4;
+}
+
 /* Camera Action Button Area & Clean Footer Flow */
 .camera-button-action-area {
   width: calc(100% - 32px);
@@ -2097,6 +2131,65 @@ html, body {
   border-color: #86efac;
 }
 
+.complete-banner-card {
+  width: calc(100% - 32px);
+  margin: 0 16px 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #fffaf0 100%);
+  border: 2px solid var(--secondary-color, #d4b46c);
+  border-radius: var(--radius-xl, 16px);
+  padding: 20px;
+  box-shadow: var(--shadow-md);
+  box-sizing: border-box;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.complete-header-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  text-align: left;
+}
+
+.complete-award-icon {
+  color: var(--secondary-color, #d4b46c);
+  flex-shrink: 0;
+}
+
+.complete-header-row h3 {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--primary-color, #9b2d30);
+  margin: 0 0 2px 0;
+}
+
+.complete-header-row p {
+  font-size: 0.88rem;
+  color: var(--text-medium, #475569);
+  margin: 0;
+}
+
+.complete-reward-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--card-subtle-bg, #f8fafc);
+  border-radius: var(--radius-md, 10px);
+  border: 1px solid var(--border-color, #cbd5e1);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary-color, #9b2d30);
+  margin-top: 8px;
+}
+
+.complete-reward-notice.exchanged {
+  color: #16a34a;
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
 .slider-fill-progress {
   position: absolute;
   top: 0;
@@ -2104,8 +2197,12 @@ html, body {
   height: 100%;
   background: linear-gradient(90deg, var(--primary-color, #9b2d30), #dc2626);
   border-radius: 30px;
-  transition: width 0.05s ease-out;
+  transition: width 0.35s cubic-bezier(0.25, 1, 0.5, 1);
   box-shadow: 0 0 12px rgba(155, 45, 48, 0.4);
+}
+
+.slider-track-container.dragging .slider-fill-progress {
+  transition: none;
 }
 
 .slider-track-container.exchanged .slider-fill-progress {

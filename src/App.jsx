@@ -12,6 +12,7 @@ import StaffDashboard from './components/StaffDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import UserSyncModal from './components/UserSyncModal';
 import { decodeSyncData, SYNC_PREFIX } from './utils/syncUtils';
+import { calculateDistance, MAX_DISTANCE_METERS } from './utils/geoUtils';
 import TermsModal from './components/TermsModal';
 import OnboardingTour from './components/OnboardingTour';
 import CustomAlertModal from './components/CustomAlertModal';
@@ -135,13 +136,32 @@ function App() {
           let currentStamps = currentSaved?.stamps || [];
           
           if (!currentStamps.includes(spotId)) {
-            currentStamps = [...currentStamps, spotId];
-            setStamps(currentStamps);
-            storage.save('stamp_rally_data', {
-              ...(currentSaved || {}),
-              stamps: currentStamps
-            });
-            showAlert(`「${targetCp.name || 'スポット'}」にチェックインしました！`, 'スタンプ獲得', 'success');
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  const { latitude, longitude } = pos.coords;
+                  const distance = calculateDistance(latitude, longitude, targetCp.lat, targetCp.lon);
+                  if (distance <= MAX_DISTANCE_METERS) {
+                    currentStamps = [...currentStamps, spotId];
+                    setStamps(currentStamps);
+                    storage.save('stamp_rally_data', {
+                      ...(currentSaved || {}),
+                      stamps: currentStamps
+                    });
+                    showAlert(`「${targetCp.name || 'スポット'}」にチェックインしました！`, 'スタンプ獲得', 'success');
+                  } else {
+                    showAlert(`スポットから離れています（あと約${Math.round(distance)}m）。掲示場所の近くで再度お試しください。`, '位置エラー', 'warning');
+                  }
+                },
+                (err) => {
+                  console.error("URL checkin geolocation error:", err);
+                  showAlert("位置情報が取得できないため、スタンプを適用できませんでした。スキャナーをご利用ください。", "位置情報エラー", "error");
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+              );
+            } else {
+              showAlert("お使いの端末はGPS位置情報に対応していません。", "位置情報エラー", "error");
+            }
           } else {
             showAlert(`「${targetCp.name || 'スポット'}」は既にチェックイン済みです！`, '獲得済み', 'warning');
           }
@@ -253,6 +273,19 @@ function App() {
       return;
     }
 
+    // 既にいずれかのエリアでコンプリート達成済みの場合は他エリアのスタンプ獲得をブロック（規約: お一人様1エリアまで）
+    if (completedSection) {
+      const isTargetInCompletedSection = matchingCps.some(cp => cp.sectionId === completedSection.id);
+      if (!isTargetInCompletedSection) {
+        showAlert(
+          `既に「${completedSection.name}」でコンプリートを達成しているため、他のエリアのスタンプは獲得できません。`,
+          'スタンプ獲得不可',
+          'warning'
+        );
+        return;
+      }
+    }
+
     // 1. 現在選択中のエリア内のCPがあればそれを優先
     let targetCp = matchingCps.find(cp => cp.sectionId === activeSectionId);
     
@@ -360,7 +393,21 @@ function App() {
     }
   };
 
+  // 達成済みエリアの算出 (規約: お一人様1エリアまで)
+  const completedSection = sections.find(sec => {
+    const secCps = checkpoints.filter(cp => cp.sectionId === sec.id);
+    return secCps.length > 0 && secCps.every(cp => stamps.includes(cp.qrId || cp.id));
+  }) || null;
+
   const handleSelectSection = (secId) => {
+    if (completedSection && secId !== completedSection.id) {
+      const targetSec = sections.find(s => s.id === secId);
+      showAlert(
+        `既に「${completedSection.name}」でエリアコンプリートを達成しているため、他のエリア（${targetSec ? targetSec.name : '選択エリア'}）での追加コンプリート・特典獲得はできません。`,
+        'コンプリート達成済み',
+        'warning'
+      );
+    }
     setActiveSectionId(secId);
     storage.save('selected_section_id', secId);
   };
@@ -490,7 +537,11 @@ function App() {
     return <EntryGuard onAgreed={() => setAgreed(true)} />;
   }
 
-  // Completion Condition: If ANY single section has 100% of its checkpoints stamped
+  // Completion Condition: Check if current active section is 100% complete
+  const currentSecCps = checkpoints.filter(cp => cp.sectionId === activeSectionId);
+  const isCurrentSectionComplete = currentSecCps.length > 0 && currentSecCps.every(cp => stamps.includes(cp.qrId || cp.id));
+
+  // Qualification for Reward: If ANY single section has 100% of its checkpoints stamped
   const isAnySectionComplete = sections.length > 0 && sections.some(sec => {
     const secCps = checkpoints.filter(cp => cp.sectionId === sec.id);
     return secCps.length > 0 && secCps.every(cp => stamps.includes(cp.qrId || cp.id));
@@ -514,10 +565,11 @@ function App() {
             sections={sections}
             checkpoints={checkpoints}
             activeSectionId={activeSectionId}
+            completedSection={completedSection}
             onSectionChange={handleSelectSection}
             onOpenAreaModal={() => setIsAreaModalOpen(true)}
             onOpenMap={toggleMap}
-            isComplete={isComplete}
+            isComplete={isCurrentSectionComplete}
             isExchanged={isExchanged}
             onOpenCamera={() => setIsScanning(true)}
             scannerClosedAt={scannerClosedAt}

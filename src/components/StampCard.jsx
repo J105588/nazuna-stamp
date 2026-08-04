@@ -6,6 +6,7 @@ const StampCard = ({
   sections = [],
   checkpoints = [],
   activeSectionId,
+  completedSection,
   onSectionChange,
   onOpenAreaModal,
   onOpenMap,
@@ -71,6 +72,8 @@ const StampCard = ({
     }
   };
 
+  const isLockedByOtherCompletion = completedSection && currentSection?.id !== completedSection.id;
+
   return (
     <div className="stamp-card-container" onClick={(e) => {
       if (e.target.closest('.stamp-slot') || e.target.closest('.event-logo-img-small') || e.target.closest('.event-title')) return;
@@ -93,8 +96,8 @@ const StampCard = ({
               {currentSection?.name || '未選択'}
             </div>
           </div>
-          <button 
-            className="btn-change-area-subtle" 
+          <button
+            className="btn-change-area-subtle"
             onClick={onOpenAreaModal}
             title="エリアを変更"
           >
@@ -122,7 +125,7 @@ const StampCard = ({
         <div className="section-title-label">
           <strong>{currentSection?.name || 'スタンプカード'}</strong>
           {currentSection?.description && <span className="sec-sub-desc">{currentSection.description}</span>}
-          
+
           {totalSlotsCount > 0 && (
             <div className="section-progress-pill" style={{
               display: 'inline-flex',
@@ -169,10 +172,10 @@ const StampCard = ({
                         if (cp.stampIcon && cp.stampIcon.startsWith('data:image')) {
                           return (
                             <div className="stamp-mark image-stamp-mark">
-                              <img 
-                                src={cp.stampIcon} 
-                                alt="スタンプ" 
-                                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', imageRendering: '-webkit-optimize-contrast' }} 
+                              <img
+                                src={cp.stampIcon}
+                                alt="スタンプ"
+                                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', imageRendering: '-webkit-optimize-contrast' }}
                               />
                             </div>
                           );
@@ -218,13 +221,21 @@ const StampCard = ({
             </div>
           )}
         </div>
+      ) : isLockedByOtherCompletion ? (
+        <div className="completed-lock-notice-box">
+          <CheckCircle2 size={22} className="lock-icon" />
+          <div className="lock-text-content">
+            <strong>「{completedSection.name}」で達成済みです</strong>
+            <p>規約により、他エリアでの追加スタンプ獲得はできません。</p>
+          </div>
+        </div>
       ) : (
         <p className="instruction-text">
           エリアのスタンプを集めてコンプリートを目指そう！<br />スポットに着いたら「スキャンする」ボタンを押してください。
         </p>
       )}
 
-      {!isExchanged && !isComplete && (
+      {!isComplete && !isLockedByOtherCompletion && (
         <div className="camera-button-action-area">
           <button className="scan-btn-large" onClick={onOpenCamera}>
             <div className="scan-btn-icon">
