@@ -133,32 +133,36 @@ const StampCard = ({
               const isStamped = spotId ? stamps.includes(spotId) : false;
 
               return (
-                <div
-                  key={cp ? cp.id : `empty-slot-${slotNumber}`}
-                  className={`stamp-slot ${isStamped ? 'stamped' : ''}`}
-                  onClick={() => handleSlotClick(index)}
-                >
-                  <div className="slot-inner">
-                    <div className="slot-number">{slotNumber}</div>
-                    {isStamped && cp && (() => {
-                      if (cp.stampIcon && cp.stampIcon.startsWith('data:image')) {
+                <div key={cp ? cp.id : `empty-slot-${slotNumber}`} className="stamp-slot-item">
+                  <div
+                    className={`stamp-slot ${isStamped ? 'stamped' : ''}`}
+                    onClick={() => handleSlotClick(index)}
+                  >
+                    <div className="slot-inner">
+                      <div className="slot-number">{slotNumber}</div>
+                      {isStamped && cp && (() => {
+                        if (cp.stampIcon && cp.stampIcon.startsWith('data:image')) {
+                          return (
+                            <div className="stamp-mark image-stamp-mark">
+                              <img 
+                                src={cp.stampIcon} 
+                                alt="スタンプ" 
+                                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', imageRendering: '-webkit-optimize-contrast' }} 
+                              />
+                            </div>
+                          );
+                        }
+                        const IconComponent = getIconComponent(cp.stampIcon);
                         return (
-                          <div className="stamp-mark image-stamp-mark">
-                            <img 
-                              src={cp.stampIcon} 
-                              alt="スタンプ" 
-                              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', imageRendering: '-webkit-optimize-contrast' }} 
-                            />
+                          <div className="stamp-mark">
+                            <IconComponent size={32} className="check-icon" />
                           </div>
                         );
-                      }
-                      const IconComponent = getIconComponent(cp.stampIcon);
-                      return (
-                        <div className="stamp-mark">
-                          <IconComponent size={32} className="check-icon" />
-                        </div>
-                      );
-                    })()}
+                      })()}
+                    </div>
+                  </div>
+                  <div className="stamp-slot-label">
+                    {cp?.name || `スポット ${slotNumber}`}
                   </div>
                 </div>
               );

@@ -1,4 +1,4 @@
-export const MAX_DISTANCE_METERS = 30;
+export const MAX_DISTANCE_METERS = 100;
 
 function toRad(value) {
   return (value * Math.PI) / 180;
