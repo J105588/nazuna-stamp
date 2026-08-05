@@ -7,7 +7,7 @@ import MapModal from './components/MapModal';
 import AreaSelectModal from './components/AreaSelectModal';
 import { storage } from './utils/storage';
 import { stampDb } from './utils/stampDb';
-import { X, Map as MapIcon, AlertTriangle } from 'lucide-react';
+import { X, Map as MapIcon, AlertTriangle, Loader2 } from 'lucide-react';
 import StaffDashboard from './components/StaffDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import UserSyncModal from './components/UserSyncModal';
@@ -24,12 +24,13 @@ function App() {
   const [stamps, setStamps] = useState([]);
   const [sections, setSections] = useState([]);
   const [checkpoints, setCheckpoints] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [settings, setSettings] = useState({
     isAppStopped: false,
     staffPasscode: "",
     adminPasscode: ""
   });
-  
+
   // Custom Alert Modal State
   const [alertModal, setAlertModal] = useState({
     isOpen: false,
@@ -62,7 +63,7 @@ function App() {
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [isStaffDashboardOpen, setIsStaffDashboardOpen] = useState(false);
-  
+
   // Separate Staff Mode and Master Admin Mode
   const [isStaffMode, setIsStaffMode] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
@@ -76,6 +77,7 @@ function App() {
 
   // Load dynamic sections, checkpoints, and settings from Supabase DB / local storage
   const loadDb = async () => {
+    setIsLoading(true);
     try {
       // 1. Fetch system settings first to check system active status
       const currentSettings = await stampDb.getSettingsAsync();
@@ -108,7 +110,7 @@ function App() {
       // Load user progress and filter based on fetched checkpoints
       const savedData = storage.load('stamp_rally_data');
       const validSpotIds = cpList.map(cp => cp.qrId || cp.id);
-      
+
       if (savedData) {
         const filteredStamps = (savedData.stamps || []).filter(id => validSpotIds.includes(id));
         setStamps(filteredStamps);
@@ -127,14 +129,14 @@ function App() {
       // Check for URL query parameter auto check-in (e.g. ?stamp=UUID or ?qr=UUID)
       const urlParams = new URLSearchParams(window.location.search);
       const urlQrId = urlParams.get('stamp') || urlParams.get('qr');
-      
+
       if (urlQrId) {
         const targetCp = cpList.find(cp => (cp.qrId || cp.id) === urlQrId || cp.id === urlQrId);
         if (targetCp) {
           const spotId = targetCp.qrId || targetCp.id;
           const currentSaved = storage.load('stamp_rally_data');
           let currentStamps = currentSaved?.stamps || [];
-          
+
           if (!currentStamps.includes(spotId)) {
             if (navigator.geolocation) {
               navigator.geolocation.getCurrentPosition(
@@ -165,7 +167,7 @@ function App() {
           } else {
             showAlert(`「${targetCp.name || 'スポット'}」は既にチェックイン済みです！`, '獲得済み', 'warning');
           }
-          
+
           if (targetCp.sectionId) {
             setActiveSectionId(targetCp.sectionId);
           }
@@ -176,6 +178,8 @@ function App() {
       }
     } catch (err) {
       console.error("Error loading DB in App:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -288,7 +292,7 @@ function App() {
 
     // 1. 現在選択中のエリア内のCPがあればそれを優先
     let targetCp = matchingCps.find(cp => cp.sectionId === activeSectionId);
-    
+
     // 2. 現在のエリアになければ他エリアのCP
     const isOutOfArea = !targetCp;
     if (!targetCp) {
@@ -359,7 +363,7 @@ function App() {
 
   const handlePasscodeSubmit = async (e) => {
     e.preventDefault();
-    
+
     let isAdminValid = false;
     let isStaffValid = false;
 
@@ -423,6 +427,17 @@ function App() {
     };
   }, [showPasscode, isMapOpen, isTermsModalOpen, isScanning, isUserSyncModalOpen, isStaffDashboardOpen, isAdminMode, isAreaModalOpen]);
 
+  // Loading Screen (Data Loading / Parsing Overlay)
+  if (isLoading) {
+    return (
+      <div className="app-loading-container">
+        <div className="loading-card">
+          <Loader2 size={48} className="spin-icon-slow" />
+        </div>
+      </div>
+    );
+  }
+
   // Master Admin Mode (Separate DB Management View) - Access allowed even if stopped
   if (isAdminMode) {
     return (
@@ -453,7 +468,7 @@ function App() {
           <p>現在、「なずな祭街歩きスタンプラリー」はサービスを停止しております。</p>
           <p>開催期間外、またはメンテナンス中の可能性があります。</p>
           <div className="stopped-footer">
-            <p 
+            <p
               className="copyright-stopped"
               onClick={() => {
                 const newCount = syncTapCount + 1;
@@ -620,10 +635,10 @@ function App() {
       )}
 
       {isMapOpen && (
-        <MapModal 
+        <MapModal
           activeSectionId={activeSectionId}
           onOpenAreaModal={() => setIsAreaModalOpen(true)}
-          onClose={() => setIsMapOpen(false)} 
+          onClose={() => setIsMapOpen(false)}
         />
       )}
 

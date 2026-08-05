@@ -60,6 +60,7 @@ const TermsModal = ({ onClose, forceScroll = true }) => {
             <h4><MapPin size={18} /> 2. 位置情報（GPS）の利用</h4>
             <p>スタンプ取得には、端末の位置情報サービスを「オン」にし、ブラウザによる位置情報の取得を許可する必要があります。</p>
             <p className="terms-note">※ GPSの精度は端末や周囲の建物環境に依存します。近づいても反応しない場合は場所を移動して再試行してください。</p>
+            <p className="terms-note">※ 通信障害や環境等によりどうしてもスタンプが取得できない場合は、スポットの現地写真または掲示ポスターを撮影して景品交換所へお持ちください。スタッフが確認のうえ進捗を同期・付与いたします。</p>
           </div>
 
           <div className="terms-card-item">
